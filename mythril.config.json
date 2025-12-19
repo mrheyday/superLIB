@@ -1,0 +1,11 @@
+{
+  "remappings": [
+    "forge-std/=lib/forge-std/src/",
+    "superlib/=lib/superlib/"
+  ],
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "evmVersion": "paris"
+}

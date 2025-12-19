@@ -1,0 +1,47 @@
+# Echidna Configuration for RolesAuthority Fuzzing
+# Run: echidna echidna/EchidnaRolesTest.sol --contract EchidnaRolesTest --config echidna/echidna.yaml
+
+# Test settings
+testMode: "assertion"          # Use assertion mode for invariant testing
+testLimit: 50000               # Number of transactions to generate
+seqLen: 100                    # Maximum length of transaction sequences
+shrinkLimit: 5000              # Shrinking attempts for failing tests
+
+# Coverage
+coverage: true
+corpusDir: "echidna-corpus"
+
+# Compilation
+solcVersion: "0.8.28"
+cryticArgs: 
+  - "--solc-remaps"
+  - "forge-std/=lib/forge-std/src/"
+  - "--solc-remaps"  
+  - "superlib/=lib/superlib/"
+
+# Contract settings
+deployer: "0x10000"            # Owner address
+sender:                        # Addresses that can send transactions
+  - "0x10000"                  # Owner
+  - "0x20000"                  # Executor
+  - "0x30000"                  # VaultDepositor
+  - "0x40000"                  # Attacker
+  - "0x50000"                  # Guardian
+  - "0x60000"                  # WhitelistAdmin
+
+# Filtering
+filterBlacklist: true
+filterFunctions:
+  - "echidna_"                 # Property functions (auto-checked)
+
+# Gas settings
+maxGasPerTx: 30000000
+maxBlockGasLimit: 300000000
+
+# Performance
+workers: 4                     # Parallel workers
+timeout: 300                   # Timeout per test (seconds)
+
+# Output
+format: "text"
+quiet: false

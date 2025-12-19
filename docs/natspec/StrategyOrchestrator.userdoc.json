@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "kind": "user",
+  "notice": "Manages arbitrage strategies with bounded arrays and pagination"
+}

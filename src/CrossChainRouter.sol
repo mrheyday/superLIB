@@ -46,7 +46,9 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event ChainConfigQueued(uint256 indexed chainId, address bridge, uint256 minAmount, uint256 maxAmount, uint256 executeAfter);
+    event ChainConfigQueued(
+        uint256 indexed chainId, address bridge, uint256 minAmount, uint256 maxAmount, uint256 executeAfter
+    );
     event ChainConfigExecuted(uint256 indexed chainId, address bridge, uint256 minAmount, uint256 maxAmount);
     event ChainConfigCancelled(uint256 indexed chainId);
     event DailyLimitUpdated(uint256 indexed chainId, uint256 newLimit);
@@ -77,25 +79,17 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
                       TIMELOCK CONFIG MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function queueChainConfig(
-        uint256 chainId,
-        address bridge,
-        uint256 minAmount,
-        uint256 maxAmount,
-        bool active
-    ) external requiresAuth {
+    function queueChainConfig(uint256 chainId, address bridge, uint256 minAmount, uint256 maxAmount, bool active)
+        external
+        requiresAuth
+    {
         if (bridge == address(0)) revert ZeroAddress();
         if (chainId == 0) revert InvalidChainId();
 
         uint256 executeAfter = block.timestamp + CONFIG_TIMELOCK;
 
         pendingConfigs[chainId] = PendingConfig({
-            config: ChainConfig({
-                bridge: bridge,
-                minAmount: minAmount,
-                maxAmount: maxAmount,
-                active: active
-            }),
+            config: ChainConfig({bridge: bridge, minAmount: minAmount, maxAmount: maxAmount, active: active}),
             executeAfter: executeAfter,
             exists: true
         });
@@ -137,12 +131,12 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
                          CROSS-CHAIN EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeCrossChainTrade(
-        uint256 chainId,
-        address token,
-        uint256 amount,
-        bytes calldata bridgeData
-    ) external nonReentrant requiresAuth returns (bytes32 messageId) {
+    function executeCrossChainTrade(uint256 chainId, address token, uint256 amount, bytes calldata bridgeData)
+        external
+        nonReentrant
+        requiresAuth
+        returns (bytes32 messageId)
+    {
         ChainConfig memory config = chainConfigs[chainId];
         if (!config.active) revert ChainNotActive(chainId);
         if (amount < config.minAmount) revert AmountBelowMinimum(amount, config.minAmount);
@@ -204,10 +198,10 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
     function getRemainingDailyVolume(uint256 chainId) external view returns (uint256) {
         uint256 limit = dailyVolumeLimit[chainId];
         if (limit == 0) return type(uint256).max;
-        
+
         uint256 today = block.timestamp / 1 days;
         if (lastVolumeReset[chainId] < today) return limit;
-        
+
         return limit > dailyVolume[chainId] ? limit - dailyVolume[chainId] : 0;
     }
 

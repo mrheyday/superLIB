@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "kind": "user",
+  "notice": "Manages conditional execution triggers with bounded arrays"
+}

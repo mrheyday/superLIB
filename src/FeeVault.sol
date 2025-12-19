@@ -20,7 +20,7 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     uint256 public constant MAX_FEE = 1000;
-    uint256 public constant FEE_DENOMINATOR = 10000;
+    uint256 public constant FEE_DENOMINATOR = 10_000;
     uint256 public constant MINIMUM_SHARES = 1000;
     uint256 public constant MINIMUM_DEPOSIT = 1000;
     address public constant DEAD_ADDRESS = 0x000000000000000000000000000000000000dEaD;
@@ -87,7 +87,7 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         Authority _authority
     ) ERC4626(_asset, _name, _symbol) Auth(_owner, _authority) {
         if (_feeRecipient == address(0)) revert ZeroAddress();
-        
+
         feeRecipient = _feeRecipient;
         lastRewardTime = block.timestamp;
 
@@ -116,34 +116,34 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
                             DEPOSIT/WITHDRAW
     //////////////////////////////////////////////////////////////*/
 
-    function deposit(uint256 assets, address receiver) 
-        public 
-        virtual 
-        override 
-        nonReentrant 
-        whenNotPaused 
-        returns (uint256 shares) 
+    function deposit(uint256 assets, address receiver)
+        public
+        virtual
+        override
+        nonReentrant
+        whenNotPaused
+        returns (uint256 shares)
     {
         if (assets < MINIMUM_DEPOSIT) revert DepositTooSmall(assets, MINIMUM_DEPOSIT);
-        
+
         _updateReward(receiver);
-        
+
         uint256 fee = (assets * depositFee) / FEE_DENOMINATOR;
         uint256 assetsAfterFee = assets - fee;
-        
+
         shares = previewDeposit(assetsAfterFee);
         if (shares == 0) revert ZeroAmount();
-        
+
         address(asset).safeTransferFrom(msg.sender, address(this), assets);
-        
+
         if (fee > 0) {
             address(asset).safeTransfer(feeRecipient, fee);
             emit FeesCollected(feeRecipient, fee);
         }
-        
+
         _mint(receiver, shares);
         totalDeposited += assetsAfterFee;
-        
+
         emit Deposit(msg.sender, receiver, assetsAfterFee, shares);
     }
 
@@ -157,27 +157,27 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         returns (uint256 shares)
     {
         _updateReward(_owner);
-        
+
         shares = previewWithdraw(assets);
-        
+
         if (msg.sender != _owner) {
             uint256 allowed = allowance[_owner][msg.sender];
             if (allowed != type(uint256).max) allowance[_owner][msg.sender] = allowed - shares;
         }
-        
+
         _burn(_owner, shares);
-        
+
         uint256 fee = (assets * withdrawFee) / FEE_DENOMINATOR;
         uint256 assetsAfterFee = assets - fee;
-        
+
         if (fee > 0) {
             address(asset).safeTransfer(feeRecipient, fee);
             emit FeesCollected(feeRecipient, fee);
         }
-        
+
         address(asset).safeTransfer(receiver, assetsAfterFee);
         totalWithdrawn += assets;
-        
+
         emit Withdraw(msg.sender, receiver, _owner, assets, shares);
     }
 
@@ -191,28 +191,28 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         returns (uint256 assets)
     {
         _updateReward(_owner);
-        
+
         if (msg.sender != _owner) {
             uint256 allowed = allowance[_owner][msg.sender];
             if (allowed != type(uint256).max) allowance[_owner][msg.sender] = allowed - shares;
         }
-        
+
         assets = previewRedeem(shares);
         if (assets == 0) revert ZeroAmount();
-        
+
         _burn(_owner, shares);
-        
+
         uint256 fee = (assets * withdrawFee) / FEE_DENOMINATOR;
         uint256 assetsAfterFee = assets - fee;
-        
+
         if (fee > 0) {
             address(asset).safeTransfer(feeRecipient, fee);
             emit FeesCollected(feeRecipient, fee);
         }
-        
+
         address(asset).safeTransfer(receiver, assetsAfterFee);
         totalWithdrawn += assets;
-        
+
         emit Withdraw(msg.sender, receiver, _owner, assets, shares);
     }
 
@@ -223,13 +223,13 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     function claimRewards() external nonReentrant whenNotPaused returns (uint256 reward) {
         _updateReward(msg.sender);
         reward = rewards[msg.sender];
-        
+
         if (reward == 0) revert InsufficientRewards();
         if (reward > rewardReserves) revert InsufficientRewardReserves(reward, rewardReserves);
-        
+
         rewards[msg.sender] = 0;
         rewardReserves -= reward;
-        
+
         address(asset).safeTransfer(msg.sender, reward);
         emit RewardsClaimed(msg.sender, reward);
     }

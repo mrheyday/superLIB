@@ -49,17 +49,14 @@ contract StrategyAnalytics is Auth {
                          METRICS RECORDING
     //////////////////////////////////////////////////////////////*/
 
-    function recordTrade(
-        bytes32 strategyId,
-        bool success,
-        uint256 profit,
-        uint256 loss,
-        uint256 executionTime
-    ) external requiresAuth {
+    function recordTrade(bytes32 strategyId, bool success, uint256 profit, uint256 loss, uint256 executionTime)
+        external
+        requiresAuth
+    {
         if (strategyId == bytes32(0)) revert ZeroStrategyId();
 
         StrategyMetrics storage metrics = strategyMetrics[strategyId];
-        
+
         metrics.totalTrades++;
         if (success) {
             metrics.successfulTrades++;
@@ -99,7 +96,7 @@ contract StrategyAnalytics is Auth {
     function getSuccessRate(bytes32 strategyId) external view returns (uint256) {
         StrategyMetrics memory metrics = strategyMetrics[strategyId];
         if (metrics.totalTrades == 0) return 0;
-        return (metrics.successfulTrades * 10000) / metrics.totalTrades;
+        return (metrics.successfulTrades * 10_000) / metrics.totalTrades;
     }
 
     function getNetProfit(bytes32 strategyId) external view returns (int256) {

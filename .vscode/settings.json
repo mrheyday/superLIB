@@ -1,0 +1,14 @@
+{
+    "solidity.packageDefaultDependenciesDirectory": "lib",
+    "solidity.remappings": [
+        "forge-std/=lib/forge-std/src/",
+        "superlib/=lib/superlib/"
+    ],
+    "solidity.compileUsingRemoteVersion": "v0.8.28",
+    "solidity.formatter": "forge",
+    "editor.formatOnSave": true,
+    "[solidity]": {
+        "editor.defaultFormatter": "JuanBlanco.solidity",
+        "editor.tabSize": 4
+    }
+}

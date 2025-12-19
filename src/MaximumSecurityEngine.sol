@@ -67,23 +67,20 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {
-        securityConfig = SecurityConfig({
-            minSecurityScore: 50,
-            requiresCommitment: false,
-            maxValuePerCall: type(uint256).max
-        });
+        securityConfig =
+            SecurityConfig({minSecurityScore: 50, requiresCommitment: false, maxValuePerCall: type(uint256).max});
     }
 
     /*//////////////////////////////////////////////////////////////
                           SECURE EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeWithMaximumSecurity(
-        address target,
-        bytes4 selector,
-        bytes calldata params,
-        address userAddress
-    ) external nonReentrant requiresAuth returns (bool success, bytes memory result) {
+    function executeWithMaximumSecurity(address target, bytes4 selector, bytes calldata params, address userAddress)
+        external
+        nonReentrant
+        requiresAuth
+        returns (bool success, bytes memory result)
+    {
         // Validate whitelists
         if (!whitelistedTargets[target]) revert TargetNotWhitelisted(target);
         if (!whitelistedSelectors[target][selector]) revert SelectorNotWhitelisted(target, selector);
@@ -110,7 +107,7 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
         // Build calldata and execute
         bytes memory callData = abi.encodePacked(selector, params);
         (success, result) = target.call(callData);
-        
+
         if (!success) revert ExecutionFailed();
 
         emit SecureExecutionComplete(userAddress, target, selector, success);
@@ -120,17 +117,11 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
                          CONFIG MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function setSecurityConfig(
-        uint256 minScore,
-        bool requiresCommitment,
-        uint256 maxValue
-    ) external requiresAuth {
+    function setSecurityConfig(uint256 minScore, bool requiresCommitment, uint256 maxValue) external requiresAuth {
         if (minScore > MAX_SECURITY_SCORE) revert InvalidSecurityScore(minScore);
-        
+
         securityConfig = SecurityConfig({
-            minSecurityScore: minScore,
-            requiresCommitment: requiresCommitment,
-            maxValuePerCall: maxValue
+            minSecurityScore: minScore, requiresCommitment: requiresCommitment, maxValuePerCall: maxValue
         });
 
         emit SecurityConfigUpdated(minScore, requiresCommitment, maxValue);
@@ -139,10 +130,10 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
     function setUserSecurityScore(address user, uint256 score) external requiresAuth {
         if (user == address(0)) revert ZeroAddress();
         if (score > MAX_SECURITY_SCORE) revert InvalidSecurityScore(score);
-        
+
         uint256 oldScore = userSecurityScores[user];
         userSecurityScores[user] = score;
-        
+
         emit SecurityScoreUpdated(user, oldScore, score);
     }
 
@@ -165,11 +156,11 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
     function getRateLimitStatus(address user) external view returns (uint256 remaining, uint256 resetTime) {
         RateLimitInfo memory info = rateLimits[user];
         uint256 periodEnd = info.periodStart + RATE_LIMIT_PERIOD;
-        
+
         if (block.timestamp >= periodEnd) {
             return (MAX_CALLS_PER_PERIOD, block.timestamp);
         }
-        
+
         remaining = MAX_CALLS_PER_PERIOD > info.callCount ? MAX_CALLS_PER_PERIOD - info.callCount : 0;
         resetTime = periodEnd;
     }
@@ -178,12 +169,12 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
         if (!whitelistedTargets[target]) return false;
         if (!whitelistedSelectors[target][selector]) return false;
         if (userSecurityScores[user] < securityConfig.minSecurityScore) return false;
-        
+
         RateLimitInfo memory info = rateLimits[user];
         if (block.timestamp < info.periodStart + RATE_LIMIT_PERIOD) {
             if (info.callCount >= MAX_CALLS_PER_PERIOD) return false;
         }
-        
+
         return true;
     }
 }

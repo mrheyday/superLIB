@@ -16,7 +16,7 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     uint256 public constant MAX_FEE_BPS = 500;
-    uint256 public constant BPS_DENOMINATOR = 10000;
+    uint256 public constant BPS_DENOMINATOR = 10_000;
 
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
@@ -77,11 +77,7 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
         if (feeBps > MAX_FEE_BPS) revert FeeExceedsMax(feeBps, MAX_FEE_BPS);
         if (providers[providerId].provider != address(0)) revert ProviderAlreadyExists(providerId);
 
-        providers[providerId] = FlashLoanProvider({
-            provider: provider,
-            feeBps: feeBps,
-            active: true
-        });
+        providers[providerId] = FlashLoanProvider({provider: provider, feeBps: feeBps, active: true});
         providerIds.push(providerId);
 
         emit ProviderAdded(providerId, provider, feeBps);
@@ -89,9 +85,9 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
 
     function removeProvider(bytes32 providerId) external requiresAuth {
         if (providers[providerId].provider == address(0)) revert ProviderNotFound(providerId);
-        
+
         delete providers[providerId];
-        
+
         for (uint256 i = 0; i < providerIds.length; i++) {
             if (providerIds[i] == providerId) {
                 providerIds[i] = providerIds[providerIds.length - 1];
@@ -171,7 +167,7 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
         // Calculate profit
         uint256 balanceAfter = token.balanceOf(address(this));
         uint256 fee = (amount * provider.feeBps) / BPS_DENOMINATOR;
-        
+
         if (balanceAfter < balanceBefore + fee) {
             profit = 0;
         } else {

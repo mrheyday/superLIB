@@ -1,0 +1,57 @@
+# Superlib Arbitrage Protocol - Python Dependencies
+# Install: pip install -r requirements.txt
+
+# Security Analysis
+slither-analyzer>=0.10.0
+mythril>=0.24.0
+crytic-compile>=0.3.5
+solc-select>=1.0.4
+echidna-parade
+z3-solver>=4.12.0
+
+# Web3 Interaction
+web3
+eth-account
+eth-abi
+eth-typing
+hexbytes
+
+# Data Analysis & Monitoring
+pandas>=2.1.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# API & Automation
+requests>=2.31.0
+aiohttp>=3.9.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+
+# Testing & Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+hypothesis>=6.92.0
+brownie
+
+# Gnosis Safe Integration
+Safe-eth-py
+gnosis
+
+# Flashbots / MEV
+flashbots>=2.0.0
+
+# Monitoring & Alerts
+prometheus-client>=0.19.0
+sentry-sdk>=1.38.0
+
+# CLI Tools
+click>=8.1.0
+rich>=13.7.0
+typer>=0.9.0
+
+# Code Quality
+black>=23.12.0
+isort>=5.13.0
+mypy>=1.8.0
+ruff>=0.1.8

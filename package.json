@@ -1,22 +1,87 @@
 {
-  "name": "audit_code_fixed",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib",
-    "test": "test"
-  },
+  "name": "superlib-arbitrage-protocol",
+  "version": "1.1.0",
+  "description": "Production-grade DeFi arbitrage protocol with Solmate RolesAuthority access control",
+  "license": "MIT",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "forge build",
+    "clean": "forge clean",
+    "test": "forge test",
+    "test:unit": "forge test --match-path test/RolesAuthority.t.sol -vvv",
+    "test:invariant": "forge test --match-path test/RolesInvariant.t.sol -vvv",
+    "test:p0": "forge test --match-test 'test_P0' -vvv",
+    "test:p1": "forge test --match-test 'test_P1' -vvv",
+    "test:security": "forge test --match-test 'test_Attacker|test_RolesCannot' -vvv",
+    "test:matrix": "forge test --match-test 'test_RoleMatrix' -vvv",
+    "test:gas": "forge test --gas-report",
+    "test:coverage": "forge coverage",
+    "test:fuzz": "forge test --match-path test/RolesInvariant.t.sol --fuzz-runs 1000",
+    "lint": "forge fmt --check",
+    "fmt": "forge fmt",
+    "snapshot": "forge snapshot",
+    "deploy:dry": "forge script script/DeployProduction.s.sol:DeployProduction -vvvv",
+    "deploy:mainnet": "forge script script/DeployProduction.s.sol:DeployProduction --rpc-url $MAINNET_RPC_URL --broadcast --verify -vvvv",
+    "deploy:arbitrum": "forge script script/DeployProduction.s.sol:DeployProduction --rpc-url $ARBITRUM_RPC_URL --broadcast --verify -vvvv",
+    "deploy:base": "forge script script/DeployProduction.s.sol:DeployProduction --rpc-url $BASE_RPC_URL --broadcast --verify -vvvv",
+    "verify": "forge verify-contract",
+    "slither": "slither . --config-file slither.config.json",
+    "mythril": "myth analyze src/*.sol --solc-json mythril/mythril.config.json",
+    "mythril:full": "./mythril/analyze.sh",
+    "mythril:access": "python3 mythril/targeted_analysis.py",
+    "mythril:vault": "myth analyze src/FeeVault.sol --solc-json mythril/mythril.config.json --solv 0.8.28 --execution-timeout 300 -o text",
+    "mythril:auth": "myth analyze lib/superlib/auth/RolesAuthority.sol --solc-json mythril/mythril.config.json --solv 0.8.28 --execution-timeout 300 -o text",
+    "echidna": "echidna echidna/EchidnaRolesTest.sol --contract EchidnaRolesTest --config echidna/echidna.yaml",
+    "echidna:long": "echidna echidna/EchidnaRolesTest.sol --contract EchidnaRolesTest --config echidna/echidna.yaml --test-limit 100000",
+    "echidna:coverage": "echidna echidna/EchidnaRolesTest.sol --contract EchidnaRolesTest --config echidna/echidna.yaml --format json > echidna-report.json",
+    "smt": "python3 scripts/smt_verify.py",
+    "smt:solc": "./scripts/smtchecker.sh",
+    "smt:chc": "solc src/RolesAuthorityVerified.sol --base-path . --include-path lib/superlib --include-path lib/forge-std/src --model-checker-engine chc --model-checker-targets assert --model-checker-timeout 60000 --model-checker-show-proved-safe",
+    "smt:bmc": "solc src/RolesAuthorityVerified.sol --base-path . --include-path lib/superlib --include-path lib/forge-std/src --model-checker-engine bmc --model-checker-targets assert,underflow,overflow --model-checker-timeout 30000",
+    "security": "npm run slither && npm run mythril:access && npm run smt",
+    "security:full": "npm run slither && npm run mythril:full && npm run echidna && npm run smt",
+    "size": "forge build --sizes",
+    "abi": "forge inspect FeeVault abi > abi/FeeVault.json && forge inspect RolesAuthority abi > abi/RolesAuthority.json",
+    "docs": "forge doc --build",
+    "docs:natspec": "./scripts/generate_docs.sh",
+    "docs:serve": "forge doc --serve --port 3000",
+    "anvil": "anvil --fork-url $MAINNET_RPC_URL",
+    "anvil:arbitrum": "anvil --fork-url $ARBITRUM_RPC_URL",
+    "anvil:base": "anvil --fork-url $BASE_RPC_URL"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0"
+  "keywords": [
+    "solidity",
+    "defi",
+    "arbitrage",
+    "flash-loans",
+    "mev-protection",
+    "erc4626",
+    "roles-authority",
+    "foundry",
+    "superlib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
   },
   "devDependencies": {
-    "forge-std": "^1.1.2"
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0",
+    "hardhat": "^2.19.0",
+    "prettier": "^3.1.0",
+    "prettier-plugin-solidity": "^1.2.0",
+    "solhint": "^4.0.0",
+    "solhint-plugin-prettier": "^0.1.0"
+  },
+  "dependencies": {
+    "@safe-global/safe-core-sdk": "^3.3.5",
+    "@safe-global/safe-ethers-lib": "^1.9.4",
+    "axios": "^1.6.2",
+    "commander": "^11.1.0",
+    "nm": "^1.0.0",
+    "viem": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

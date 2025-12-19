@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "kind": "user",
+  "notice": "Orchestrates flash loan and risk engines with timelock-protected updates"
+}

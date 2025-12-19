@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "kind": "user",
+  "notice": "Executes zero-capital arbitrage with flash loan pool whitelisting"
+}

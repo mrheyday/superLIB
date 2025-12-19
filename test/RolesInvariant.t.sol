@@ -22,7 +22,10 @@ contract MockToken is ERC20 {
     constructor() ERC20("Mock", "MCK", 18) {
         _mint(msg.sender, 1_000_000e18);
     }
-    function mint(address to, uint256 amount) external { _mint(to, amount); }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
 }
 
 /// @title RolesAuthorityHandler
@@ -33,7 +36,7 @@ contract RolesAuthorityHandler is Test {
     address[] public actors;
     address[] public targets;
     bytes4[] public selectors;
-    
+
     uint256 public callCount;
     uint256 public escalationAttempts;
     uint256 public successfulEscalations;
@@ -57,11 +60,11 @@ contract RolesAuthorityHandler is Test {
         callCount++;
         address actor = actors[actorSeed % actors.length];
         address target = actors[targetSeed % actors.length];
-        
+
         if (actor == owner) return; // Skip owner - they're allowed
-        
+
         escalationAttempts++;
-        
+
         vm.prank(actor);
         try authority.setUserRole(target, role % 11, true) {
             successfulEscalations++;
@@ -69,21 +72,16 @@ contract RolesAuthorityHandler is Test {
     }
 
     /// @notice Attempt to set capability from a non-owner actor
-    function attemptSetCapability(
-        uint256 actorSeed,
-        uint256 targetSeed,
-        uint256 selectorSeed,
-        uint8 role
-    ) external {
+    function attemptSetCapability(uint256 actorSeed, uint256 targetSeed, uint256 selectorSeed, uint8 role) external {
         callCount++;
         address actor = actors[actorSeed % actors.length];
         address target = targets[targetSeed % targets.length];
         bytes4 selector = selectors[selectorSeed % selectors.length];
-        
+
         if (actor == owner) return;
-        
+
         escalationAttempts++;
-        
+
         vm.prank(actor);
         try authority.setRoleCapability(role % 11, target, selector, true) {
             successfulEscalations++;
@@ -91,20 +89,16 @@ contract RolesAuthorityHandler is Test {
     }
 
     /// @notice Attempt to set public capability from non-owner
-    function attemptSetPublicCapability(
-        uint256 actorSeed,
-        uint256 targetSeed,
-        uint256 selectorSeed
-    ) external {
+    function attemptSetPublicCapability(uint256 actorSeed, uint256 targetSeed, uint256 selectorSeed) external {
         callCount++;
         address actor = actors[actorSeed % actors.length];
         address target = targets[targetSeed % targets.length];
         bytes4 selector = selectors[selectorSeed % selectors.length];
-        
+
         if (actor == owner) return;
-        
+
         escalationAttempts++;
-        
+
         vm.prank(actor);
         try authority.setPublicCapability(target, selector, true) {
             successfulEscalations++;
@@ -121,13 +115,13 @@ contract ProtocolHandler is Test {
     FlashLoanEngine public flashLoanEngine;
     RiskEngine public riskEngine;
     MockToken public token;
-    
+
     address public owner;
     address public executor;
     address public arbitrageManager;
     address public vaultDepositor;
     address public attacker;
-    
+
     uint256 public unauthorizedWithdrawAttempts;
     uint256 public successfulUnauthorizedWithdraws;
     uint256 public unauthorizedPauseAttempts;
@@ -164,7 +158,7 @@ contract ProtocolHandler is Test {
     /// @notice Vault depositor deposits (should succeed)
     function depositorDeposit(uint256 amount) external {
         amount = bound(amount, 1e18, 10_000e18);
-        
+
         vm.startPrank(vaultDepositor);
         token.approve(address(feeVault), amount);
         try feeVault.deposit(amount, vaultDepositor) {} catch {}
@@ -176,9 +170,9 @@ contract ProtocolHandler is Test {
         amount = bound(amount, 1e18, 10_000e18);
         uint256 shares = feeVault.balanceOf(vaultDepositor);
         if (shares == 0) return;
-        
+
         unauthorizedWithdrawAttempts++;
-        
+
         vm.prank(vaultDepositor);
         try feeVault.withdraw(amount, vaultDepositor, vaultDepositor) {
             successfulUnauthorizedWithdraws++;
@@ -188,9 +182,9 @@ contract ProtocolHandler is Test {
     /// @notice Attacker attempts withdrawal (should fail)
     function attackerAttemptWithdraw(uint256 amount) external {
         amount = bound(amount, 1e18, 10_000e18);
-        
+
         unauthorizedWithdrawAttempts++;
-        
+
         vm.prank(attacker);
         try feeVault.withdraw(amount, attacker, attacker) {
             successfulUnauthorizedWithdraws++;
@@ -200,7 +194,7 @@ contract ProtocolHandler is Test {
     /// @notice Attacker attempts to pause vault (should fail)
     function attackerAttemptPause() external {
         unauthorizedPauseAttempts++;
-        
+
         vm.prank(attacker);
         try feeVault.pause() {
             successfulUnauthorizedPauses++;
@@ -210,7 +204,7 @@ contract ProtocolHandler is Test {
     /// @notice Executor attempts to pause vault (should fail - wrong role)
     function executorAttemptPause() external {
         unauthorizedPauseAttempts++;
-        
+
         vm.prank(executor);
         try feeVault.pause() {
             successfulUnauthorizedPauses++;
@@ -220,7 +214,7 @@ contract ProtocolHandler is Test {
     /// @notice Attacker attempts whitelist modification (should fail)
     function attackerAttemptWhitelist(address target) external {
         unauthorizedWhitelistAttempts++;
-        
+
         vm.prank(attacker);
         try mevProtector.setTargetWhitelist(target, true) {
             successfulUnauthorizedWhitelists++;
@@ -230,7 +224,7 @@ contract ProtocolHandler is Test {
     /// @notice Executor attempts whitelist (should fail - wrong role)
     function executorAttemptWhitelist(address target) external {
         unauthorizedWhitelistAttempts++;
-        
+
         vm.prank(executor);
         try mevProtector.setTargetWhitelist(target, true) {
             successfulUnauthorizedWhitelists++;
@@ -278,7 +272,7 @@ contract RolesInvariantTest is StdInvariant, Test {
         feeVault = new FeeVault(token, "Vault", "VLT", owner, owner, authority);
         token.approve(address(feeVault), 1000);
         feeVault.initializeDeadShares();
-        
+
         mevProtector = new MEVProtector(owner, authority);
         flashLoanEngine = new FlashLoanEngine(owner, authority);
         crossChainRouter = new CrossChainRouter(owner, authority);
@@ -336,13 +330,7 @@ contract RolesInvariantTest is StdInvariant, Test {
         selectors[10] = MaximumSecurityEngine.setSecurityConfig.selector;
         selectors[11] = StrategyOrchestrator.addStrategy.selector;
 
-        authorityHandler = new RolesAuthorityHandler(
-            authority,
-            owner,
-            actors,
-            targets,
-            selectors
-        );
+        authorityHandler = new RolesAuthorityHandler(authority, owner, actors, targets, selectors);
 
         protocolHandler = new ProtocolHandler(
             authority,
@@ -375,41 +363,72 @@ contract RolesInvariantTest is StdInvariant, Test {
 
         // MEVProtector - P0 FIX
         authority.setRoleCapability(Roles.EXECUTOR, address(mevProtector), MEVProtector.commitExecution.selector, true);
-        authority.setRoleCapability(Roles.EXECUTOR, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setTargetWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setSelectorWhitelist.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setTargetWhitelist.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setSelectorWhitelist.selector, true
+        );
 
         // FlashLoanEngine
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector, true);
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector, true
+        );
         authority.setRoleCapability(Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.addProvider.selector, true);
 
         // CrossChainRouter - P0 FIX
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.queueChainConfig.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.executeChainConfig.selector, true);
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.queueChainConfig.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.executeChainConfig.selector, true
+        );
 
         // RiskEngine
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setTokenRiskScore.selector, true);
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setTokenRiskScore.selector, true
+        );
 
         // ExecutionTrigger
-        authority.setRoleCapability(Roles.EXECUTOR, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.addTrigger.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.addTrigger.selector, true
+        );
 
         // MaxSecurityEngine
-        authority.setRoleCapability(Roles.EXECUTOR, address(maxSecurityEngine), MaximumSecurityEngine.executeWithMaximumSecurity.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(maxSecurityEngine), MaximumSecurityEngine.setSecurityConfig.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(maxSecurityEngine), MaximumSecurityEngine.executeWithMaximumSecurity.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(maxSecurityEngine), MaximumSecurityEngine.setSecurityConfig.selector, true
+        );
 
         // StrategyOrchestrator
-        authority.setRoleCapability(Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.addStrategy.selector, true);
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.executeStrategyFlow.selector, true);
+        authority.setRoleCapability(
+            Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.addStrategy.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER,
+            address(strategyOrchestrator),
+            StrategyOrchestrator.executeStrategyFlow.selector,
+            true
+        );
 
         // MinimumCostExecutor
-        authority.setRoleCapability(Roles.EXECUTOR, address(minimumCostExecutor), MinimumCostExecutor.executeWithMinimumCost.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(minimumCostExecutor), MinimumCostExecutor.executeWithMinimumCost.selector, true
+        );
     }
 
     function _assignRoles() internal {
         // Owner gets ADMIN role
         authority.setUserRole(owner, Roles.ADMIN, true);
-        
+
         authority.setUserRole(executor, Roles.EXECUTOR, true);
         authority.setUserRole(arbitrageManager, Roles.ARBITRAGE_MANAGER, true);
         authority.setUserRole(riskManager, Roles.RISK_MANAGER, true);
@@ -427,29 +446,19 @@ contract RolesInvariantTest is StdInvariant, Test {
 
     /// @notice INVARIANT: No non-owner can ever grant roles
     function invariant_noUnauthorizedRoleGrants() public view {
-        assertEq(
-            authorityHandler.successfulEscalations(),
-            0,
-            "CRITICAL: Unauthorized role grant detected"
-        );
+        assertEq(authorityHandler.successfulEscalations(), 0, "CRITICAL: Unauthorized role grant detected");
     }
 
     /// @notice INVARIANT: No unauthorized withdrawals from vault (P0)
     function invariant_noUnauthorizedWithdrawals() public view {
         assertEq(
-            protocolHandler.successfulUnauthorizedWithdraws(),
-            0,
-            "CRITICAL: Unauthorized vault withdrawal detected"
+            protocolHandler.successfulUnauthorizedWithdraws(), 0, "CRITICAL: Unauthorized vault withdrawal detected"
         );
     }
 
     /// @notice INVARIANT: No unauthorized pauses (P1)
     function invariant_noUnauthorizedPauses() public view {
-        assertEq(
-            protocolHandler.successfulUnauthorizedPauses(),
-            0,
-            "CRITICAL: Unauthorized pause detected"
-        );
+        assertEq(protocolHandler.successfulUnauthorizedPauses(), 0, "CRITICAL: Unauthorized pause detected");
     }
 
     /// @notice INVARIANT: No unauthorized whitelist modifications (P0)
@@ -464,10 +473,7 @@ contract RolesInvariantTest is StdInvariant, Test {
     /// @notice INVARIANT: Owner always retains admin role
     function invariant_ownerRetainsAdmin() public view {
         // Owner should always have ADMIN role
-        assertTrue(
-            authority.doesUserHaveRole(owner, Roles.ADMIN),
-            "Owner lost ADMIN role"
-        );
+        assertTrue(authority.doesUserHaveRole(owner, Roles.ADMIN), "Owner lost ADMIN role");
         // ADMIN role should always have withdraw capability
         assertTrue(
             authority.doesRoleHaveCapability(Roles.ADMIN, address(feeVault), FeeVault.withdraw.selector),

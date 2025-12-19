@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "dev",
+  "details": "Uses Superlib Auth for role-based access control",
+  "title": "QuantumArbitrage"
+}

@@ -41,20 +41,15 @@ contract ExecutionAnalytics is Auth {
                          ANALYTICS RECORDING
     //////////////////////////////////////////////////////////////*/
 
-    function recordExecution(
-        bytes32 executionId,
-        uint256 gasUsed,
-        uint256 gasPrice,
-        uint256 profit,
-        bool success
-    ) external requiresAuth {
-        executionHistory[executionId].push(ExecutionRecord({
-            timestamp: block.timestamp,
-            gasUsed: gasUsed,
-            gasPrice: gasPrice,
-            profit: profit,
-            success: success
-        }));
+    function recordExecution(bytes32 executionId, uint256 gasUsed, uint256 gasPrice, uint256 profit, bool success)
+        external
+        requiresAuth
+    {
+        executionHistory[executionId].push(
+            ExecutionRecord({
+                timestamp: block.timestamp, gasUsed: gasUsed, gasPrice: gasPrice, profit: profit, success: success
+            })
+        );
 
         executorGasSpent[msg.sender] += gasUsed * gasPrice;
         totalExecutions++;
@@ -78,7 +73,7 @@ contract ExecutionAnalytics is Auth {
     function getAverageGasUsed(bytes32 executionId) external view returns (uint256) {
         ExecutionRecord[] memory history = executionHistory[executionId];
         if (history.length == 0) return 0;
-        
+
         uint256 total = 0;
         for (uint256 i = 0; i < history.length; i++) {
             total += history[i].gasUsed;

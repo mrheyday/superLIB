@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "kind": "dev",
+  "author": "Superlib Arbitrage Protocol Team",
+  "details": "Used with Solmate RolesAuthority for capability-based access control.      Role IDs are uint8 values (0-255) stored as bits in a bytes32 bitmask.      Each role grants specific capabilities across protocol contracts.",
+  "title": "Roles"
+}

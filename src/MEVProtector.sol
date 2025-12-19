@@ -65,21 +65,19 @@ contract MEVProtector is Auth, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function commitExecution(bytes32 commitHash) external {
-        commitments[msg.sender] = Commitment({
-            hash: commitHash,
-            blockNumber: block.number
-        });
+        commitments[msg.sender] = Commitment({hash: commitHash, blockNumber: block.number});
         emit CommitmentMade(msg.sender, commitHash, block.number);
     }
 
-    function executeProtectedArbitrage(
-        address target,
-        bytes calldata data,
-        bytes32 salt
-    ) external nonReentrant requiresAuth returns (bool success, bytes memory result) {
+    function executeProtectedArbitrage(address target, bytes calldata data, bytes32 salt)
+        external
+        nonReentrant
+        requiresAuth
+        returns (bool success, bytes memory result)
+    {
         // Validate whitelist
         if (!whitelistedTargets[target]) revert TargetNotWhitelisted(target);
-        
+
         bytes4 selector = bytes4(data[:4]);
         if (!whitelistedSelectors[target][selector]) revert SelectorNotWhitelisted(target, selector);
 

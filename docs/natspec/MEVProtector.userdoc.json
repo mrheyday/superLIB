@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "kind": "user",
+  "notice": "Commit-reveal scheme with target/selector whitelisting for MEV protection"
+}

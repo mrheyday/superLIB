@@ -18,7 +18,10 @@ contract MockToken is ERC20 {
     constructor() ERC20("Mock", "MCK", 18) {
         _mint(msg.sender, 1_000_000e18);
     }
-    function mint(address to, uint256 amount) external { _mint(to, amount); }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
 }
 
 contract RolesAuthorityTest is Test {
@@ -49,11 +52,11 @@ contract RolesAuthorityTest is Test {
         token = new MockToken();
 
         feeVault = new FeeVault(token, "Vault", "VLT", owner, owner, authority);
-        
+
         // Initialize dead shares for inflation attack protection
         token.approve(address(feeVault), 1000);
         feeVault.initializeDeadShares();
-        
+
         mevProtector = new MEVProtector(owner, authority);
         flashLoanEngine = new FlashLoanEngine(owner, authority);
         crossChainRouter = new CrossChainRouter(owner, authority);
@@ -78,23 +81,39 @@ contract RolesAuthorityTest is Test {
 
         // MEVProtector
         authority.setRoleCapability(Roles.EXECUTOR, address(mevProtector), MEVProtector.commitExecution.selector, true);
-        authority.setRoleCapability(Roles.EXECUTOR, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setTargetWhitelist.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setTargetWhitelist.selector, true
+        );
 
         // FlashLoanEngine
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector, true);
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector, true
+        );
         authority.setRoleCapability(Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.addProvider.selector, true);
 
         // CrossChainRouter
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.queueChainConfig.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.executeChainConfig.selector, true);
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.queueChainConfig.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.executeChainConfig.selector, true
+        );
 
         // RiskEngine
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setTokenRiskScore.selector, true);
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setTokenRiskScore.selector, true
+        );
 
         // ExecutionTrigger
-        authority.setRoleCapability(Roles.EXECUTOR, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.addTrigger.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.addTrigger.selector, true
+        );
     }
 
     function _assignRoles() internal {
@@ -165,19 +184,14 @@ contract RolesAuthorityTest is Test {
 
     function test_P0_UpdaterCanAddTrigger() public {
         vm.prank(updater);
-        executionTrigger.addTrigger(
-            keccak256("trigger1"),
-            ExecutionTrigger.TriggerType.PriceThreshold,
-            1000,
-            60
-        );
+        executionTrigger.addTrigger(keccak256("trigger1"), ExecutionTrigger.TriggerType.PriceThreshold, 1000, 60);
 
         assertEq(executionTrigger.getTriggerCount(), 1, "Trigger should be added");
     }
 
     function test_P0_AdminCanQueueChainConfig() public {
         vm.prank(owner);
-        crossChainRouter.queueChainConfig(1, address(0x1), 100, 10000, true);
+        crossChainRouter.queueChainConfig(1, address(0x1), 100, 10_000, true);
 
         CrossChainRouter.PendingConfig memory pending = crossChainRouter.getPendingConfig(1);
         assertTrue(pending.exists, "Pending config should exist");
@@ -259,14 +273,20 @@ contract RolesAuthorityTest is Test {
     function test_RoleMatrixExecutor() public view {
         assertTrue(authority.canCall(executor, address(mevProtector), MEVProtector.commitExecution.selector));
         assertTrue(authority.canCall(executor, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector));
-        assertTrue(authority.canCall(executor, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector));
+        assertTrue(
+            authority.canCall(executor, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector)
+        );
 
         assertFalse(authority.canCall(executor, address(feeVault), FeeVault.withdraw.selector));
         assertFalse(authority.canCall(executor, address(riskEngine), RiskEngine.setTokenRiskScore.selector));
     }
 
     function test_RoleMatrixArbitrageManager() public view {
-        assertTrue(authority.canCall(arbitrageManager, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector));
+        assertTrue(
+            authority.canCall(
+                arbitrageManager, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector
+            )
+        );
 
         assertFalse(authority.canCall(arbitrageManager, address(feeVault), FeeVault.withdraw.selector));
         assertFalse(authority.canCall(arbitrageManager, address(feeVault), FeeVault.pause.selector));

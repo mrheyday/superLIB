@@ -1,0 +1,53 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.28"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+evm_version = "prague"
+
+# Remappings
+remappings = [
+    "forge-std/=lib/forge-std/src/",
+    "superlib/=lib/superlib/",
+]
+
+# Testing
+fuzz = { runs = 256 }
+invariant = { runs = 256, depth = 100 }
+
+[profile.ci]
+fuzz = { runs = 1000 }
+invariant = { runs = 512, depth = 200 }
+
+[profile.smt]
+# SMTChecker configuration
+# Run with: forge build --profile smt
+# Note: Requires solc with z3 support
+model_checker = { engine = "chc", timeout = 60000, targets = ["assert"] }
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+multiline_func_header = "params_first"
+quote_style = "double"
+number_underscore = "thousands"
+single_line_statement_blocks = "preserve"
+
+[doc]
+out = "docs/forge-doc"
+repository = "https://github.com/mrheyday/superLIB"
+[rpc_endpoints]
+mainnet = "${MAINNET_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+anvil = "http://localhost:8545"
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+arbitrum = { key = "${ARBISCAN_API_KEY}" }
+base = { key = "${BASESCAN_API_KEY}" }

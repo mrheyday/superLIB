@@ -26,7 +26,7 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
 
     address public flashLoanEngine;
     address public riskEngine;
-    
+
     PendingUpdate public pendingFlashLoanEngine;
     PendingUpdate public pendingRiskEngine;
 
@@ -62,12 +62,9 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-        address _owner,
-        Authority _authority,
-        address _flashLoanEngine,
-        address _riskEngine
-    ) Auth(_owner, _authority) {
+    constructor(address _owner, Authority _authority, address _flashLoanEngine, address _riskEngine)
+        Auth(_owner, _authority)
+    {
         if (_flashLoanEngine == address(0) || _riskEngine == address(0)) revert ZeroAddress();
         flashLoanEngine = _flashLoanEngine;
         riskEngine = _riskEngine;
@@ -79,13 +76,9 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
 
     function queueFlashLoanEngineUpdate(address newEngine) external requiresAuth {
         if (newEngine == address(0)) revert ZeroAddress();
-        
+
         uint256 executeAfter = block.timestamp + ENGINE_UPDATE_TIMELOCK;
-        pendingFlashLoanEngine = PendingUpdate({
-            newEngine: newEngine,
-            executeAfter: executeAfter,
-            exists: true
-        });
+        pendingFlashLoanEngine = PendingUpdate({newEngine: newEngine, executeAfter: executeAfter, exists: true});
 
         emit FlashLoanEngineUpdateQueued(newEngine, executeAfter);
     }
@@ -106,13 +99,9 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
 
     function queueRiskEngineUpdate(address newEngine) external requiresAuth {
         if (newEngine == address(0)) revert ZeroAddress();
-        
+
         uint256 executeAfter = block.timestamp + ENGINE_UPDATE_TIMELOCK;
-        pendingRiskEngine = PendingUpdate({
-            newEngine: newEngine,
-            executeAfter: executeAfter,
-            exists: true
-        });
+        pendingRiskEngine = PendingUpdate({newEngine: newEngine, executeAfter: executeAfter, exists: true});
 
         emit RiskEngineUpdateQueued(newEngine, executeAfter);
     }
@@ -159,7 +148,7 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
         (bool riskSuccess, bytes memory riskResult) = riskEngine.staticcall(
             abi.encodeWithSignature("evaluate(address,uint256,uint256)", msg.sender, 0, block.timestamp)
         );
-        
+
         uint256 riskScore = 50; // Default if call fails
         if (riskSuccess && riskResult.length >= 32) {
             riskScore = abi.decode(riskResult, (uint256));

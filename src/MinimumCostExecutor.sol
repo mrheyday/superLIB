@@ -48,13 +48,14 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
                         COST-OPTIMIZED EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeWithMinimumCost(
-        address target,
-        bytes calldata data,
-        uint256 expectedProfit
-    ) external nonReentrant requiresAuth returns (bool success, bytes memory result) {
+    function executeWithMinimumCost(address target, bytes calldata data, uint256 expectedProfit)
+        external
+        nonReentrant
+        requiresAuth
+        returns (bool success, bytes memory result)
+    {
         uint256 gasStart = gasleft();
-        
+
         // Check gas price
         if (tx.gasprice > maxGasPrice) revert GasPriceTooHigh(tx.gasprice, maxGasPrice);
 
@@ -67,7 +68,7 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
         uint256 cost = gasUsed * tx.gasprice;
 
         // Verify cost is within limits
-        uint256 maxCost = (expectedProfit * maxCostPercentage) / 10000;
+        uint256 maxCost = (expectedProfit * maxCostPercentage) / 10_000;
         if (cost > maxCost) revert CostExceedsLimit(cost, maxCost);
 
         emit ExecutionCompleted(msg.sender, gasUsed, cost, expectedProfit);
@@ -78,7 +79,7 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     function setMaxCostPercentage(uint256 newPercentage) external requiresAuth {
-        if (newPercentage > 10000) revert InvalidPercentage();
+        if (newPercentage > 10_000) revert InvalidPercentage();
         emit MaxCostPercentageUpdated(maxCostPercentage, newPercentage);
         maxCostPercentage = newPercentage;
     }
@@ -100,10 +101,10 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
     function claimGasRefund() external nonReentrant {
         uint256 refund = executorGasRefunds[msg.sender];
         if (refund == 0) revert NoRefundAvailable();
-        
+
         executorGasRefunds[msg.sender] = 0;
         payable(msg.sender).transfer(refund);
-        
+
         emit GasRefundClaimed(msg.sender, refund);
     }
 

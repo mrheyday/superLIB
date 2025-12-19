@@ -159,7 +159,7 @@ contract StrategyOrchestrator is Auth {
         if (!strategy.active) revert StrategyNotActive(strategyId);
 
         strategy.lastExecutedAt = block.timestamp;
-        
+
         emit StrategyExecuted(strategyId, 0, block.timestamp);
         return true;
     }
@@ -176,10 +176,10 @@ contract StrategyOrchestrator is Auth {
         return strategyIds.length;
     }
 
-    function getStrategiesPaginated(uint256 offset, uint256 limit) 
-        external 
-        view 
-        returns (StrategyConfig[] memory result, uint256 total) 
+    function getStrategiesPaginated(uint256 offset, uint256 limit)
+        external
+        view
+        returns (StrategyConfig[] memory result, uint256 total)
     {
         total = strategyIds.length;
         if (offset >= total) {

@@ -88,12 +88,24 @@ contract DeployWithRoles is Script {
 
     function _wireAllRoles() internal {
         // ExecutionTrigger
-        authority.setRoleCapability(Roles.EXECUTOR, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.updateCooldown.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.updateThreshold.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.toggleTrigger.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.removeTrigger.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(executionTrigger), ExecutionTrigger.addTrigger.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(executionTrigger), ExecutionTrigger.checkAndExecuteTriggers.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.updateCooldown.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.updateThreshold.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.toggleTrigger.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.removeTrigger.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(executionTrigger), ExecutionTrigger.addTrigger.selector, true
+        );
 
         // FeeVault - P0 FIX: Separate deposit/withdraw
         authority.setRoleCapability(Roles.VAULT_DEPOSITOR, address(feeVault), FeeVault.deposit.selector, true);
@@ -111,82 +123,208 @@ contract DeployWithRoles is Script {
         authority.setRoleCapability(Roles.GUARDIAN, address(feeVault), FeeVault.pause.selector, true);
 
         // QuantumArbitrage
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(quantumArbitrage), QuantumArbitrage.executeArbitrage.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.queueFlashLoanEngineUpdate.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.queueRiskEngineUpdate.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.executeFlashLoanEngineUpdate.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.executeRiskEngineUpdate.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.cancelPendingFlashLoanUpdate.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.cancelPendingRiskUpdate.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(quantumArbitrage), QuantumArbitrage.setMinRiskScore.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(quantumArbitrage), QuantumArbitrage.setMaxExecutionsPerBlock.selector, true);
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER, address(quantumArbitrage), QuantumArbitrage.executeArbitrage.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.queueFlashLoanEngineUpdate.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.queueRiskEngineUpdate.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.executeFlashLoanEngineUpdate.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.executeRiskEngineUpdate.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.cancelPendingFlashLoanUpdate.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(quantumArbitrage), QuantumArbitrage.cancelPendingRiskUpdate.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(quantumArbitrage), QuantumArbitrage.setMinRiskScore.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(quantumArbitrage), QuantumArbitrage.setMaxExecutionsPerBlock.selector, true
+        );
 
         // RiskEngine
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setTokenRiskScore.selector, true);
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setTokenRiskScore.selector, true
+        );
         authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setPairRiskScore.selector, true);
         authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setRiskParams.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setGlobalRiskMultiplier.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(riskEngine), RiskEngine.batchSetTokenRiskScores.selector, true);
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(riskEngine), RiskEngine.setGlobalRiskMultiplier.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(riskEngine), RiskEngine.batchSetTokenRiskScores.selector, true
+        );
 
         // CrossChainRouter - P0 FIX: timelock bindings
-        authority.setRoleCapability(Roles.CROSSCHAIN_OPERATOR, address(crossChainRouter), CrossChainRouter.executeCrossChainTrade.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.queueChainConfig.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.executeChainConfig.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(crossChainRouter), CrossChainRouter.cancelPendingConfig.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(crossChainRouter), CrossChainRouter.setDailyLimit.selector, true);
+        authority.setRoleCapability(
+            Roles.CROSSCHAIN_OPERATOR, address(crossChainRouter), CrossChainRouter.executeCrossChainTrade.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.queueChainConfig.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.executeChainConfig.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(crossChainRouter), CrossChainRouter.cancelPendingConfig.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(crossChainRouter), CrossChainRouter.setDailyLimit.selector, true
+        );
 
         // StrategyOrchestrator
-        authority.setRoleCapability(Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.addStrategy.selector, true);
-        authority.setRoleCapability(Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.removeStrategy.selector, true);
-        authority.setRoleCapability(Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.updateStrategy.selector, true);
-        authority.setRoleCapability(Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.toggleStrategy.selector, true);
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.executeStrategyFlow.selector, true);
+        authority.setRoleCapability(
+            Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.addStrategy.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.removeStrategy.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.updateStrategy.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.STRATEGY_MANAGER, address(strategyOrchestrator), StrategyOrchestrator.toggleStrategy.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER,
+            address(strategyOrchestrator),
+            StrategyOrchestrator.executeStrategyFlow.selector,
+            true
+        );
 
         // MEVProtector - P0 FIX: commit + whitelist bindings
         authority.setRoleCapability(Roles.EXECUTOR, address(mevProtector), MEVProtector.commitExecution.selector, true);
-        authority.setRoleCapability(Roles.EXECUTOR, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setTargetWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setSelectorWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.batchSetTargetWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.batchSetSelectorWhitelist.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(mevProtector), MEVProtector.executeProtectedArbitrage.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setTargetWhitelist.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.setSelectorWhitelist.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.batchSetTargetWhitelist.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(mevProtector), MEVProtector.batchSetSelectorWhitelist.selector, true
+        );
 
         // MaxSecurityEngine
-        authority.setRoleCapability(Roles.EXECUTOR, address(maxSecurityEngine), MaximumSecurityEngine.executeWithMaximumSecurity.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(maxSecurityEngine), MaximumSecurityEngine.setSecurityConfig.selector, true);
-        authority.setRoleCapability(Roles.RISK_MANAGER, address(maxSecurityEngine), MaximumSecurityEngine.setUserSecurityScore.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(maxSecurityEngine), MaximumSecurityEngine.setTargetWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(maxSecurityEngine), MaximumSecurityEngine.setSelectorWhitelist.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(maxSecurityEngine), MaximumSecurityEngine.executeWithMaximumSecurity.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(maxSecurityEngine), MaximumSecurityEngine.setSecurityConfig.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.RISK_MANAGER, address(maxSecurityEngine), MaximumSecurityEngine.setUserSecurityScore.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(maxSecurityEngine), MaximumSecurityEngine.setTargetWhitelist.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(maxSecurityEngine), MaximumSecurityEngine.setSelectorWhitelist.selector, true
+        );
 
         // FlashLoanEngine - P0 FIX: DEX whitelist binding
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector, true);
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER, address(flashLoanEngine), FlashLoanEngine.executeFlashLoanArbitrage.selector, true
+        );
         authority.setRoleCapability(Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.addProvider.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.removeProvider.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.updateProvider.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(flashLoanEngine), FlashLoanEngine.setDexRouterWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(flashLoanEngine), FlashLoanEngine.setExecutorStatus.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(flashLoanEngine), FlashLoanEngine.setSlippageLimits.selector, true);
+        authority.setRoleCapability(
+            Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.removeProvider.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(flashLoanEngine), FlashLoanEngine.updateProvider.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(flashLoanEngine), FlashLoanEngine.setDexRouterWhitelist.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN, address(flashLoanEngine), FlashLoanEngine.setExecutorStatus.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(flashLoanEngine), FlashLoanEngine.setSlippageLimits.selector, true
+        );
 
         // MinimumCostExecutor
-        authority.setRoleCapability(Roles.EXECUTOR, address(minimumCostExecutor), MinimumCostExecutor.executeWithMinimumCost.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(minimumCostExecutor), MinimumCostExecutor.setMaxCostPercentage.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(minimumCostExecutor), MinimumCostExecutor.setDefaultPriorityFee.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(minimumCostExecutor), MinimumCostExecutor.setMaxGasPrice.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(minimumCostExecutor), MinimumCostExecutor.addGasRefund.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(minimumCostExecutor), MinimumCostExecutor.executeWithMinimumCost.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(minimumCostExecutor), MinimumCostExecutor.setMaxCostPercentage.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(minimumCostExecutor), MinimumCostExecutor.setDefaultPriorityFee.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER, address(minimumCostExecutor), MinimumCostExecutor.setMaxGasPrice.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(minimumCostExecutor), MinimumCostExecutor.addGasRefund.selector, true
+        );
 
         // UltimateArbitrageEngine
-        authority.setRoleCapability(Roles.ARBITRAGE_MANAGER, address(ultimateArbitrageEngine), UltimateArbitrageEngine.executeArbitrage.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(ultimateArbitrageEngine), UltimateArbitrageEngine.setFlashLoanPoolWhitelist.selector, true);
-        authority.setRoleCapability(Roles.WHITELIST_ADMIN, address(ultimateArbitrageEngine), UltimateArbitrageEngine.setExecutorAuthorization.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(ultimateArbitrageEngine), UltimateArbitrageEngine.setFeeVault.selector, true);
-        authority.setRoleCapability(Roles.FEE_UPDATER, address(ultimateArbitrageEngine), UltimateArbitrageEngine.setPerformanceFee.selector, true);
+        authority.setRoleCapability(
+            Roles.ARBITRAGE_MANAGER,
+            address(ultimateArbitrageEngine),
+            UltimateArbitrageEngine.executeArbitrage.selector,
+            true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN,
+            address(ultimateArbitrageEngine),
+            UltimateArbitrageEngine.setFlashLoanPoolWhitelist.selector,
+            true
+        );
+        authority.setRoleCapability(
+            Roles.WHITELIST_ADMIN,
+            address(ultimateArbitrageEngine),
+            UltimateArbitrageEngine.setExecutorAuthorization.selector,
+            true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(ultimateArbitrageEngine), UltimateArbitrageEngine.setFeeVault.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.FEE_UPDATER,
+            address(ultimateArbitrageEngine),
+            UltimateArbitrageEngine.setPerformanceFee.selector,
+            true
+        );
 
         // Analytics
-        authority.setRoleCapability(Roles.EXECUTOR, address(strategyAnalytics), StrategyAnalytics.recordTrade.selector, true);
-        authority.setRoleCapability(Roles.ADMIN, address(strategyAnalytics), StrategyAnalytics.resetMetrics.selector, true);
-        authority.setRoleCapability(Roles.EXECUTOR, address(executionAnalytics), ExecutionAnalytics.recordExecution.selector, true);
-        authority.setRoleCapability(Roles.STRATEGY_MANAGER, address(intelligenceProcessor), IntelligenceProcessor.addOpportunity.selector, true);
-        authority.setRoleCapability(Roles.EXECUTOR, address(intelligenceProcessor), IntelligenceProcessor.markProcessed.selector, true);
-        authority.setRoleCapability(Roles.UPDATER, address(intelligenceProcessor), IntelligenceProcessor.clearExpiredOpportunities.selector, true);
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(strategyAnalytics), StrategyAnalytics.recordTrade.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.ADMIN, address(strategyAnalytics), StrategyAnalytics.resetMetrics.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(executionAnalytics), ExecutionAnalytics.recordExecution.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.STRATEGY_MANAGER, address(intelligenceProcessor), IntelligenceProcessor.addOpportunity.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.EXECUTOR, address(intelligenceProcessor), IntelligenceProcessor.markProcessed.selector, true
+        );
+        authority.setRoleCapability(
+            Roles.UPDATER,
+            address(intelligenceProcessor),
+            IntelligenceProcessor.clearExpiredOpportunities.selector,
+            true
+        );
     }
 }
 
@@ -194,5 +332,8 @@ contract MockERC20 is ERC20 {
     constructor(string memory name, string memory symbol, uint8 decimals_) ERC20(name, symbol, decimals_) {
         _mint(msg.sender, 1_000_000 * 10 ** decimals_);
     }
-    function mint(address to, uint256 amount) external { _mint(to, amount); }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
 }

@@ -31,7 +31,7 @@ contract RiskEngine is Auth {
 
     mapping(address => uint256) public tokenRiskScores;
     mapping(bytes32 => uint256) public pairRiskScores;
-    
+
     RiskParams public riskParams;
     uint256 public globalRiskMultiplier = 100; // 100 = 1x
 
@@ -41,7 +41,9 @@ contract RiskEngine is Auth {
 
     event TokenRiskScoreUpdated(address indexed token, uint256 oldScore, uint256 newScore);
     event PairRiskScoreUpdated(bytes32 indexed pairId, uint256 oldScore, uint256 newScore);
-    event RiskParamsUpdated(uint256 volatilityWeight, uint256 liquidityWeight, uint256 correlationWeight, uint256 timeDecay);
+    event RiskParamsUpdated(
+        uint256 volatilityWeight, uint256 liquidityWeight, uint256 correlationWeight, uint256 timeDecay
+    );
     event GlobalRiskMultiplierUpdated(uint256 oldMultiplier, uint256 newMultiplier);
     event RiskEvaluated(address indexed token, uint256 amount, uint256 score);
 
@@ -58,12 +60,7 @@ contract RiskEngine is Auth {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {
-        riskParams = RiskParams({
-            volatilityWeight: 30,
-            liquidityWeight: 40,
-            correlationWeight: 20,
-            timeDecayFactor: 10
-        });
+        riskParams = RiskParams({volatilityWeight: 30, liquidityWeight: 40, correlationWeight: 20, timeDecayFactor: 10});
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -74,30 +71,33 @@ contract RiskEngine is Auth {
         address token,
         uint256 amount,
         uint256 /* deadline */
-    ) external view returns (uint256 score) {
+    )
+        external
+        view
+        returns (uint256 score)
+    {
         uint256 baseScore = tokenRiskScores[token];
         if (baseScore == 0) baseScore = DEFAULT_RISK_SCORE;
 
         // Apply amount-based adjustment (larger amounts = higher risk)
         uint256 amountAdjustment = _calculateAmountAdjustment(amount);
-        
+
         // Calculate final score with global multiplier
         score = (baseScore + amountAdjustment) * globalRiskMultiplier / 100;
-        
+
         // Clamp to valid range
         score = score.clamp(MIN_RISK_SCORE, MAX_RISK_SCORE);
 
         return score;
     }
 
-    function evaluatePair(
-        address tokenA,
-        address tokenB,
-        uint256 amountA,
-        uint256 amountB
-    ) external view returns (uint256 score) {
+    function evaluatePair(address tokenA, address tokenB, uint256 amountA, uint256 amountB)
+        external
+        view
+        returns (uint256 score)
+    {
         bytes32 pairId = _getPairId(tokenA, tokenB);
-        
+
         uint256 pairScore = pairRiskScores[pairId];
         if (pairScore == 0) {
             // Calculate from individual token scores
@@ -110,24 +110,26 @@ contract RiskEngine is Auth {
 
         uint256 totalAmount = amountA + amountB;
         uint256 amountAdjustment = _calculateAmountAdjustment(totalAmount);
-        
+
         score = (pairScore + amountAdjustment) * globalRiskMultiplier / 100;
         score = score.clamp(MIN_RISK_SCORE, MAX_RISK_SCORE);
     }
 
-    function evaluateBatch(
-        address[] calldata tokens,
-        uint256[] calldata amounts
-    ) external view returns (uint256[] memory scores) {
+    function evaluateBatch(address[] calldata tokens, uint256[] calldata amounts)
+        external
+        view
+        returns (uint256[] memory scores)
+    {
         require(tokens.length == amounts.length, "LENGTH_MISMATCH");
-        
+
         scores = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 baseScore = tokenRiskScores[tokens[i]];
             if (baseScore == 0) baseScore = DEFAULT_RISK_SCORE;
-            
+
             uint256 amountAdjustment = _calculateAmountAdjustment(amounts[i]);
-            scores[i] = ((baseScore + amountAdjustment) * globalRiskMultiplier / 100).clamp(MIN_RISK_SCORE, MAX_RISK_SCORE);
+            scores[i] =
+                ((baseScore + amountAdjustment) * globalRiskMultiplier / 100).clamp(MIN_RISK_SCORE, MAX_RISK_SCORE);
         }
     }
 
@@ -142,9 +144,8 @@ contract RiskEngine is Auth {
     }
 
     function _getPairId(address tokenA, address tokenB) internal pure returns (bytes32) {
-        return tokenA < tokenB 
-            ? keccak256(abi.encodePacked(tokenA, tokenB))
-            : keccak256(abi.encodePacked(tokenB, tokenA));
+        return
+            tokenA < tokenB ? keccak256(abi.encodePacked(tokenA, tokenB)) : keccak256(abi.encodePacked(tokenB, tokenA));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -154,21 +155,21 @@ contract RiskEngine is Auth {
     function setTokenRiskScore(address token, uint256 score) external requiresAuth {
         if (token == address(0)) revert ZeroAddress();
         if (score > MAX_RISK_SCORE) revert InvalidRiskScore(score);
-        
+
         uint256 oldScore = tokenRiskScores[token];
         tokenRiskScores[token] = score;
-        
+
         emit TokenRiskScoreUpdated(token, oldScore, score);
     }
 
     function setPairRiskScore(address tokenA, address tokenB, uint256 score) external requiresAuth {
         if (tokenA == address(0) || tokenB == address(0)) revert ZeroAddress();
         if (score > MAX_RISK_SCORE) revert InvalidRiskScore(score);
-        
+
         bytes32 pairId = _getPairId(tokenA, tokenB);
         uint256 oldScore = pairRiskScores[pairId];
         pairRiskScores[pairId] = score;
-        
+
         emit PairRiskScoreUpdated(pairId, oldScore, score);
     }
 
@@ -181,14 +182,14 @@ contract RiskEngine is Auth {
         if (volatilityWeight + liquidityWeight + correlationWeight + timeDecayFactor != 100) {
             revert InvalidWeight();
         }
-        
+
         riskParams = RiskParams({
             volatilityWeight: volatilityWeight,
             liquidityWeight: liquidityWeight,
             correlationWeight: correlationWeight,
             timeDecayFactor: timeDecayFactor
         });
-        
+
         emit RiskParamsUpdated(volatilityWeight, liquidityWeight, correlationWeight, timeDecayFactor);
     }
 
@@ -198,16 +199,13 @@ contract RiskEngine is Auth {
         emit GlobalRiskMultiplierUpdated(oldMultiplier, multiplier);
     }
 
-    function batchSetTokenRiskScores(
-        address[] calldata tokens,
-        uint256[] calldata scores
-    ) external requiresAuth {
+    function batchSetTokenRiskScores(address[] calldata tokens, uint256[] calldata scores) external requiresAuth {
         require(tokens.length == scores.length, "LENGTH_MISMATCH");
-        
+
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokens[i] == address(0)) revert ZeroAddress();
             if (scores[i] > MAX_RISK_SCORE) revert InvalidRiskScore(scores[i]);
-            
+
             uint256 oldScore = tokenRiskScores[tokens[i]];
             tokenRiskScores[tokens[i]] = scores[i];
             emit TokenRiskScoreUpdated(tokens[i], oldScore, scores[i]);

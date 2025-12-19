@@ -67,12 +67,10 @@ contract ExecutionTrigger is Auth {
                         TRIGGER MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function addTrigger(
-        bytes32 triggerId,
-        TriggerType triggerType,
-        uint256 threshold,
-        uint256 cooldown
-    ) external requiresAuth {
+    function addTrigger(bytes32 triggerId, TriggerType triggerType, uint256 threshold, uint256 cooldown)
+        external
+        requiresAuth
+    {
         if (triggerIds.length >= MAX_TRIGGERS) {
             revert MaxTriggersReached(triggerIds.length, MAX_TRIGGERS);
         }
@@ -139,7 +137,11 @@ contract ExecutionTrigger is Auth {
                         TRIGGER EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function checkAndExecuteTriggers(uint256 currentValue) external requiresAuth returns (bytes32[] memory firedTriggers) {
+    function checkAndExecuteTriggers(uint256 currentValue)
+        external
+        requiresAuth
+        returns (bytes32[] memory firedTriggers)
+    {
         uint256 firedCount = 0;
         bytes32[] memory tempFired = new bytes32[](triggerIds.length);
 
@@ -148,7 +150,7 @@ contract ExecutionTrigger is Auth {
             Trigger storage trigger = triggers[id];
 
             if (!trigger.active) continue;
-            
+
             // Check cooldown
             if (block.timestamp < trigger.lastTriggered + trigger.cooldown) continue;
 

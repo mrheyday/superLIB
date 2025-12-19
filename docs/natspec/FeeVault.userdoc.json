@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "kind": "user",
+  "methods": {
+    "initializeDeadShares()": {
+      "notice": "Initialize vault with dead share assets (call after deployment)"
+    }
+  },
+  "notice": "ERC4626 tokenized vault with fee collection and rewards distribution"
+}
