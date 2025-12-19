@@ -45,6 +45,7 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     uint256 public totalWithdrawn;
 
     bool public paused;
+    bool public deadSharesInitialized;
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -73,6 +74,8 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     error DepositTooSmall(uint256 amount, uint256 minimum);
     error InsufficientRewardReserves(uint256 requested, uint256 available);
     error ContractPaused();
+    error AlreadyInitialized();
+    error NotInitialized();
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -98,8 +101,12 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     }
 
     /// @notice Initialize vault with dead share assets (call after deployment)
-    function initializeDeadShares() external {
-        require(totalAssets() == 0, "ALREADY_INITIALIZED");
+    /// @dev SECURITY: One-time only, owner-restricted to prevent front-running
+    function initializeDeadShares() external requiresAuth {
+        if (deadSharesInitialized) revert AlreadyInitialized();
+        if (totalAssets() != 0) revert AlreadyInitialized();
+        
+        deadSharesInitialized = true;
         address(asset).safeTransferFrom(msg.sender, address(this), MINIMUM_SHARES);
     }
 
@@ -108,22 +115,22 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     //////////////////////////////////////////////////////////////*/
 
     modifier whenNotPaused() {
-        if (paused) revert ContractPaused();
+        _requireNotPaused();
         _;
+    }
+
+    function _requireNotPaused() internal view {
+        if (paused) revert ContractPaused();
     }
 
     /*//////////////////////////////////////////////////////////////
                             DEPOSIT/WITHDRAW
     //////////////////////////////////////////////////////////////*/
 
-    function deposit(uint256 assets, address receiver)
-        public
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256 shares)
-    {
+    function deposit(
+        uint256 assets,
+        address receiver
+    ) public virtual override nonReentrant whenNotPaused returns (uint256 shares) {
         if (assets < MINIMUM_DEPOSIT) revert DepositTooSmall(assets, MINIMUM_DEPOSIT);
 
         _updateReward(receiver);
@@ -147,15 +154,11 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         emit Deposit(msg.sender, receiver, assetsAfterFee, shares);
     }
 
-    function withdraw(uint256 assets, address receiver, address _owner)
-        public
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        requiresAuth
-        returns (uint256 shares)
-    {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address _owner
+    ) public virtual override nonReentrant whenNotPaused requiresAuth returns (uint256 shares) {
         _updateReward(_owner);
 
         shares = previewWithdraw(assets);
@@ -181,15 +184,11 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         emit Withdraw(msg.sender, receiver, _owner, assets, shares);
     }
 
-    function redeem(uint256 shares, address receiver, address _owner)
-        public
-        virtual
-        override
-        nonReentrant
-        whenNotPaused
-        requiresAuth
-        returns (uint256 assets)
-    {
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address _owner
+    ) public virtual override nonReentrant whenNotPaused requiresAuth returns (uint256 assets) {
         _updateReward(_owner);
 
         if (msg.sender != _owner) {
@@ -234,14 +233,18 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         emit RewardsClaimed(msg.sender, reward);
     }
 
-    function addRewards(uint256 amount) external requiresAuth {
+    function addRewards(
+        uint256 amount
+    ) external requiresAuth {
         if (amount == 0) revert ZeroAmount();
         address(asset).safeTransferFrom(msg.sender, address(this), amount);
         rewardReserves += amount;
         emit RewardsAdded(amount);
     }
 
-    function earned(address account) public view returns (uint256) {
+    function earned(
+        address account
+    ) public view returns (uint256) {
         return (balanceOf[account] * (rewardPerShare() - userRewardPerSharePaid[account])) / 1e18 + rewards[account];
     }
 
@@ -250,7 +253,12 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         return rewardPerShareStored + ((block.timestamp - lastRewardTime) * rewardRate * 1e18) / totalSupply;
     }
 
-    function _updateReward(address account) internal {
+    function _updateReward(
+        address account
+    ) internal {
+        // G-2: Short-circuit when rewards disabled and no supply
+        if (rewardRate == 0 && totalSupply == 0) return;
+        
         rewardPerShareStored = rewardPerShare();
         lastRewardTime = block.timestamp;
         if (account != address(0)) {
@@ -263,31 +271,41 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
                             ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function setDepositFee(uint256 newFee) external requiresAuth {
+    function setDepositFee(
+        uint256 newFee
+    ) external requiresAuth {
         if (newFee > MAX_FEE) revert FeeExceedsMax(newFee, MAX_FEE);
         emit DepositFeeUpdated(depositFee, newFee);
         depositFee = newFee;
     }
 
-    function setWithdrawFee(uint256 newFee) external requiresAuth {
+    function setWithdrawFee(
+        uint256 newFee
+    ) external requiresAuth {
         if (newFee > MAX_FEE) revert FeeExceedsMax(newFee, MAX_FEE);
         emit WithdrawFeeUpdated(withdrawFee, newFee);
         withdrawFee = newFee;
     }
 
-    function setPerformanceFee(uint256 newFee) external requiresAuth {
+    function setPerformanceFee(
+        uint256 newFee
+    ) external requiresAuth {
         if (newFee > MAX_FEE) revert FeeExceedsMax(newFee, MAX_FEE);
         emit PerformanceFeeUpdated(performanceFee, newFee);
         performanceFee = newFee;
     }
 
-    function setFeeRecipient(address newRecipient) external requiresAuth {
+    function setFeeRecipient(
+        address newRecipient
+    ) external requiresAuth {
         if (newRecipient == address(0)) revert ZeroAddress();
         emit FeeRecipientUpdated(feeRecipient, newRecipient);
         feeRecipient = newRecipient;
     }
 
-    function setRewardRate(uint256 newRate) external requiresAuth {
+    function setRewardRate(
+        uint256 newRate
+    ) external requiresAuth {
         _updateReward(address(0));
         emit RewardRateUpdated(rewardRate, newRate);
         rewardRate = newRate;
@@ -303,7 +321,10 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
         emit Unpaused(msg.sender);
     }
 
-    function emergencyWithdraw(address to, uint256 amount) external requiresAuth {
+    function emergencyWithdraw(
+        address to,
+        uint256 amount
+    ) external requiresAuth {
         if (to == address(0)) revert ZeroAddress();
         address(asset).safeTransfer(to, amount);
         emit EmergencyWithdraw(to, amount);

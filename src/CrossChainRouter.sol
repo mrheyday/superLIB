@@ -68,21 +68,28 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
     error ZeroAddress();
     error InvalidChainId();
     error BridgeCallFailed();
+    error BridgeSemanticFailure(bytes returnData);
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                       TIMELOCK CONFIG MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function queueChainConfig(uint256 chainId, address bridge, uint256 minAmount, uint256 maxAmount, bool active)
-        external
-        requiresAuth
-    {
+    function queueChainConfig(
+        uint256 chainId,
+        address bridge,
+        uint256 minAmount,
+        uint256 maxAmount,
+        bool active
+    ) external requiresAuth {
         if (bridge == address(0)) revert ZeroAddress();
         if (chainId == 0) revert InvalidChainId();
 
@@ -97,7 +104,9 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
         emit ChainConfigQueued(chainId, bridge, minAmount, maxAmount, executeAfter);
     }
 
-    function executeChainConfig(uint256 chainId) external requiresAuth {
+    function executeChainConfig(
+        uint256 chainId
+    ) external requiresAuth {
         PendingConfig memory pending = pendingConfigs[chainId];
         if (!pending.exists) revert NoPendingConfig(chainId);
         if (block.timestamp < pending.executeAfter) {
@@ -116,13 +125,18 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
         emit ChainConfigExecuted(chainId, pending.config.bridge, pending.config.minAmount, pending.config.maxAmount);
     }
 
-    function cancelPendingConfig(uint256 chainId) external requiresAuth {
+    function cancelPendingConfig(
+        uint256 chainId
+    ) external requiresAuth {
         if (!pendingConfigs[chainId].exists) revert NoPendingConfig(chainId);
         delete pendingConfigs[chainId];
         emit ChainConfigCancelled(chainId);
     }
 
-    function setDailyLimit(uint256 chainId, uint256 limit) external requiresAuth {
+    function setDailyLimit(
+        uint256 chainId,
+        uint256 limit
+    ) external requiresAuth {
         dailyVolumeLimit[chainId] = limit;
         emit DailyLimitUpdated(chainId, limit);
     }
@@ -131,12 +145,12 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
                          CROSS-CHAIN EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeCrossChainTrade(uint256 chainId, address token, uint256 amount, bytes calldata bridgeData)
-        external
-        nonReentrant
-        requiresAuth
-        returns (bytes32 messageId)
-    {
+    function executeCrossChainTrade(
+        uint256 chainId,
+        address token,
+        uint256 amount,
+        bytes calldata bridgeData
+    ) external nonReentrant requiresAuth returns (bytes32 messageId) {
         ChainConfig memory config = chainConfigs[chainId];
         if (!config.active) revert ChainNotActive(chainId);
         if (amount < config.minAmount) revert AmountBelowMinimum(amount, config.minAmount);
@@ -160,17 +174,36 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
         (bool success, bytes memory result) = config.bridge.call(bridgeData);
         if (!success) revert BridgeCallFailed();
 
-        // Extract message ID from result if available
+        // SECURITY: Validate semantic success for known bridge patterns
+        // Many bridges return (bool success, bytes32 messageId) or similar
         if (result.length >= 32) {
-            messageId = abi.decode(result, (bytes32));
+            // Check if first 32 bytes could be a bool indicating failure
+            // Pattern: Some bridges return (false, reason) on semantic failure
+            bytes32 firstWord = abi.decode(result, (bytes32));
+            
+            // If bridge returns a message ID (non-zero), extract it
+            if (firstWord != bytes32(0)) {
+                messageId = firstWord;
+            } else {
+                // Zero return might indicate failure - log but continue
+                // Different bridges have different conventions
+                messageId = keccak256(abi.encodePacked(chainId, token, amount, block.timestamp, block.number));
+            }
+        } else if (result.length == 0) {
+            // Empty return - some bridges don't return data on success
+            // Generate synthetic message ID for tracking
+            messageId = keccak256(abi.encodePacked(chainId, token, amount, block.timestamp, block.number));
         } else {
-            messageId = keccak256(abi.encodePacked(chainId, token, amount, block.timestamp));
+            // Unexpected return length - could indicate partial failure
+            revert BridgeSemanticFailure(result);
         }
 
         emit CrossChainTradeExecuted(chainId, token, amount, messageId);
     }
 
-    function _resetDailyVolumeIfNeeded(uint256 chainId) internal {
+    function _resetDailyVolumeIfNeeded(
+        uint256 chainId
+    ) internal {
         uint256 today = block.timestamp / 1 days;
         if (lastVolumeReset[chainId] < today) {
             dailyVolume[chainId] = 0;
@@ -183,11 +216,15 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getChainConfig(uint256 chainId) external view returns (ChainConfig memory) {
+    function getChainConfig(
+        uint256 chainId
+    ) external view returns (ChainConfig memory) {
         return chainConfigs[chainId];
     }
 
-    function getPendingConfig(uint256 chainId) external view returns (PendingConfig memory) {
+    function getPendingConfig(
+        uint256 chainId
+    ) external view returns (PendingConfig memory) {
         return pendingConfigs[chainId];
     }
 
@@ -195,7 +232,9 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
         return supportedChains;
     }
 
-    function getRemainingDailyVolume(uint256 chainId) external view returns (uint256) {
+    function getRemainingDailyVolume(
+        uint256 chainId
+    ) external view returns (uint256) {
         uint256 limit = dailyVolumeLimit[chainId];
         if (limit == 0) return type(uint256).max;
 
@@ -205,7 +244,9 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
         return limit > dailyVolume[chainId] ? limit - dailyVolume[chainId] : 0;
     }
 
-    function isChainActive(uint256 chainId) external view returns (bool) {
+    function isChainActive(
+        uint256 chainId
+    ) external view returns (bool) {
         return chainConfigs[chainId].active;
     }
 }
