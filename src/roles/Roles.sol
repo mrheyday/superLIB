@@ -10,6 +10,7 @@ pragma solidity ^0.8.28;
 /// @custom:security-contact security@example.com
 /// @custom:audit-status Trinity Audit v1.1 - All findings addressed
 library Roles {
+
     /// @notice Super-admin role for contract upgrades, emergency actions, and provider management
     /// @dev Assigned to Gnosis Safe multisig (3-of-5 recommended)
     uint8 internal constant ADMIN = 0;
@@ -57,4 +58,5 @@ library Roles {
     /// @dev Controls target/selector/DEX whitelists - elevated permission
     /// @custom:audit P0 fix - Elevated from UPDATER due to attack surface
     uint8 internal constant WHITELIST_ADMIN = 10;
+
 }

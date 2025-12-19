@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Build contracts
+        run: forge build
+
+      - name: Run tests
+        run: forge test
+
+      - name: Generate documentation
+        run: forge doc --build
+
+      - name: Create ABI artifacts
+        run: |
+          mkdir -p release/abi
+          for file in out/*.sol/*.json; do
+            name=$(basename $(dirname $file) .sol)
+            if [[ ! "$name" =~ ^(Test|Script|Mock) ]]; then
+              jq '.abi' "$file" > "release/abi/${name}.json" 2>/dev/null || true
+            fi
+          done
+
+      - name: Package release
+        run: |
+          cd release
+          zip -r ../superLIB-${{ github.ref_name }}.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: superLIB-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}

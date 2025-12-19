@@ -7,6 +7,7 @@ import {Auth, Authority} from "superlib/auth/Auth.sol";
 /// @notice Tracks execution metrics for arbitrage strategies
 /// @dev Uses Superlib Auth for role-based access control
 contract StrategyAnalytics is Auth {
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -43,16 +44,22 @@ contract StrategyAnalytics is Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                          METRICS RECORDING
     //////////////////////////////////////////////////////////////*/
 
-    function recordTrade(bytes32 strategyId, bool success, uint256 profit, uint256 loss, uint256 executionTime)
-        external
-        requiresAuth
-    {
+    function recordTrade(
+        bytes32 strategyId,
+        bool success,
+        uint256 profit,
+        uint256 loss,
+        uint256 executionTime
+    ) external requiresAuth {
         if (strategyId == bytes32(0)) revert ZeroStrategyId();
 
         StrategyMetrics storage metrics = strategyMetrics[strategyId];
@@ -80,7 +87,9 @@ contract StrategyAnalytics is Auth {
         emit TradeRecorded(strategyId, success, profit, loss);
     }
 
-    function resetMetrics(bytes32 strategyId) external requiresAuth {
+    function resetMetrics(
+        bytes32 strategyId
+    ) external requiresAuth {
         delete strategyMetrics[strategyId];
         emit MetricsReset(strategyId);
     }
@@ -89,17 +98,23 @@ contract StrategyAnalytics is Auth {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getMetrics(bytes32 strategyId) external view returns (StrategyMetrics memory) {
+    function getMetrics(
+        bytes32 strategyId
+    ) external view returns (StrategyMetrics memory) {
         return strategyMetrics[strategyId];
     }
 
-    function getSuccessRate(bytes32 strategyId) external view returns (uint256) {
+    function getSuccessRate(
+        bytes32 strategyId
+    ) external view returns (uint256) {
         StrategyMetrics memory metrics = strategyMetrics[strategyId];
         if (metrics.totalTrades == 0) return 0;
         return (metrics.successfulTrades * 10_000) / metrics.totalTrades;
     }
 
-    function getNetProfit(bytes32 strategyId) external view returns (int256) {
+    function getNetProfit(
+        bytes32 strategyId
+    ) external view returns (int256) {
         StrategyMetrics memory metrics = strategyMetrics[strategyId];
         return int256(metrics.totalProfit) - int256(metrics.totalLoss);
     }
@@ -107,4 +122,5 @@ contract StrategyAnalytics is Auth {
     function getProtocolStats() external view returns (uint256 trades, uint256 profit) {
         return (totalProtocolTrades, totalProtocolProfit);
     }
+
 }

@@ -1,30 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
-import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
-import {Authority} from "superlib/auth/Auth.sol";
-import {ERC20} from "superlib/core/ERC20.sol";
 import {Roles} from "../src/roles/Roles.sol";
+import {Test, console} from "forge-std/Test.sol";
+import {Authority} from "superlib/auth/Auth.sol";
+import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
+import {ERC20} from "superlib/core/ERC20.sol";
 
-import {FeeVault} from "../src/FeeVault.sol";
-import {MEVProtector} from "../src/MEVProtector.sol";
-import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
-import {RiskEngine} from "../src/RiskEngine.sol";
 import {ExecutionTrigger} from "../src/ExecutionTrigger.sol";
+import {FeeVault} from "../src/FeeVault.sol";
+import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
+import {MEVProtector} from "../src/MEVProtector.sol";
+import {RiskEngine} from "../src/RiskEngine.sol";
 
 contract MockToken is ERC20 {
+
     constructor() ERC20("Mock", "MCK", 18) {
         _mint(msg.sender, 1_000_000e18);
     }
 
-    function mint(address to, uint256 amount) external {
+    function mint(
+        address to,
+        uint256 amount
+    ) external {
         _mint(to, amount);
     }
+
 }
 
 contract RolesAuthorityTest is Test {
+
     RolesAuthority authority;
     MockToken token;
     FeeVault feeVault;
@@ -298,4 +304,5 @@ contract RolesAuthorityTest is Test {
         assertFalse(authority.canCall(riskManager, address(feeVault), FeeVault.withdraw.selector));
         assertFalse(authority.canCall(riskManager, address(flashLoanEngine), FlashLoanEngine.addProvider.selector));
     }
+
 }

@@ -7,6 +7,7 @@ import {Auth, Authority} from "superlib/auth/Auth.sol";
 /// @notice Processes and stores arbitrage opportunity intelligence
 /// @dev Uses Superlib Auth for role-based access control
 contract IntelligenceProcessor is Auth {
+
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -59,7 +60,10 @@ contract IntelligenceProcessor is Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                      OPPORTUNITY MANAGEMENT
@@ -91,7 +95,10 @@ contract IntelligenceProcessor is Auth {
         emit OpportunityAdded(opportunityId, oppType, estimatedProfit);
     }
 
-    function markProcessed(bytes32 opportunityId, bool success) external requiresAuth {
+    function markProcessed(
+        bytes32 opportunityId,
+        bool success
+    ) external requiresAuth {
         Opportunity storage opp = opportunities[opportunityId];
         if (opp.estimatedProfit == 0 && opp.expiryTime == 0) {
             revert OpportunityNotFound(opportunityId);
@@ -103,7 +110,9 @@ contract IntelligenceProcessor is Auth {
         emit OpportunityProcessed(opportunityId, success);
     }
 
-    function clearExpiredOpportunities(OpportunityType oppType) external requiresAuth {
+    function clearExpiredOpportunities(
+        OpportunityType oppType
+    ) external requiresAuth {
         bytes32[] storage typeOpps = opportunitiesByType[oppType];
         uint256 cleared = 0;
 
@@ -125,15 +134,21 @@ contract IntelligenceProcessor is Auth {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getOpportunity(bytes32 opportunityId) external view returns (Opportunity memory) {
+    function getOpportunity(
+        bytes32 opportunityId
+    ) external view returns (Opportunity memory) {
         return opportunities[opportunityId];
     }
 
-    function getOpportunitiesByType(OpportunityType oppType) external view returns (bytes32[] memory) {
+    function getOpportunitiesByType(
+        OpportunityType oppType
+    ) external view returns (bytes32[] memory) {
         return opportunitiesByType[oppType];
     }
 
-    function getActiveOpportunities(OpportunityType oppType) external view returns (bytes32[] memory) {
+    function getActiveOpportunities(
+        OpportunityType oppType
+    ) external view returns (bytes32[] memory) {
         bytes32[] memory typeOpps = opportunitiesByType[oppType];
         uint256 activeCount = 0;
 
@@ -154,4 +169,5 @@ contract IntelligenceProcessor is Auth {
         }
         return active;
     }
+
 }

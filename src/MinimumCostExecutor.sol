@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "superlib/security/ReentrancyLib.sol";
 /// @notice Optimizes execution costs with gas price management
 /// @dev Uses Superlib Auth for role-based access control
 contract MinimumCostExecutor is Auth, ReentrancyGuard {
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -42,18 +43,20 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                         COST-OPTIMIZED EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeWithMinimumCost(address target, bytes calldata data, uint256 expectedProfit)
-        external
-        nonReentrant
-        requiresAuth
-        returns (bool success, bytes memory result)
-    {
+    function executeWithMinimumCost(
+        address target,
+        bytes calldata data,
+        uint256 expectedProfit
+    ) external nonReentrant requiresAuth returns (bool success, bytes memory result) {
         uint256 gasStart = gasleft();
 
         // Check gas price
@@ -78,23 +81,32 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
                          CONFIG MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function setMaxCostPercentage(uint256 newPercentage) external requiresAuth {
+    function setMaxCostPercentage(
+        uint256 newPercentage
+    ) external requiresAuth {
         if (newPercentage > 10_000) revert InvalidPercentage();
         emit MaxCostPercentageUpdated(maxCostPercentage, newPercentage);
         maxCostPercentage = newPercentage;
     }
 
-    function setDefaultPriorityFee(uint256 newFee) external requiresAuth {
+    function setDefaultPriorityFee(
+        uint256 newFee
+    ) external requiresAuth {
         emit DefaultPriorityFeeUpdated(defaultPriorityFee, newFee);
         defaultPriorityFee = newFee;
     }
 
-    function setMaxGasPrice(uint256 newMaxGasPrice) external requiresAuth {
+    function setMaxGasPrice(
+        uint256 newMaxGasPrice
+    ) external requiresAuth {
         emit MaxGasPriceUpdated(maxGasPrice, newMaxGasPrice);
         maxGasPrice = newMaxGasPrice;
     }
 
-    function addGasRefund(address executor, uint256 amount) external requiresAuth {
+    function addGasRefund(
+        address executor,
+        uint256 amount
+    ) external requiresAuth {
         executorGasRefunds[executor] += amount;
     }
 
@@ -112,7 +124,9 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function estimateCost(uint256 gasEstimate) external view returns (uint256) {
+    function estimateCost(
+        uint256 gasEstimate
+    ) external view returns (uint256) {
         return gasEstimate * (tx.gasprice + defaultPriorityFee);
     }
 
@@ -121,4 +135,5 @@ contract MinimumCostExecutor is Auth, ReentrancyGuard {
     }
 
     receive() external payable {}
+
 }

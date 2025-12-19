@@ -1,36 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
-import {StdInvariant} from "forge-std/StdInvariant.sol";
-import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
-import {Authority} from "superlib/auth/Auth.sol";
-import {ERC20} from "superlib/core/ERC20.sol";
 import {Roles} from "../src/roles/Roles.sol";
+import {StdInvariant} from "forge-std/StdInvariant.sol";
+import {Test, console} from "forge-std/Test.sol";
+import {Authority} from "superlib/auth/Auth.sol";
+import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
+import {ERC20} from "superlib/core/ERC20.sol";
 
-import {FeeVault} from "../src/FeeVault.sol";
-import {MEVProtector} from "../src/MEVProtector.sol";
-import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
-import {RiskEngine} from "../src/RiskEngine.sol";
 import {ExecutionTrigger} from "../src/ExecutionTrigger.sol";
+import {FeeVault} from "../src/FeeVault.sol";
+import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
+import {MEVProtector} from "../src/MEVProtector.sol";
 import {MaximumSecurityEngine} from "../src/MaximumSecurityEngine.sol";
-import {StrategyOrchestrator} from "../src/StrategyOrchestrator.sol";
 import {MinimumCostExecutor} from "../src/MinimumCostExecutor.sol";
+import {RiskEngine} from "../src/RiskEngine.sol";
+import {StrategyOrchestrator} from "../src/StrategyOrchestrator.sol";
 
 contract MockToken is ERC20 {
+
     constructor() ERC20("Mock", "MCK", 18) {
         _mint(msg.sender, 1_000_000e18);
     }
 
-    function mint(address to, uint256 amount) external {
+    function mint(
+        address to,
+        uint256 amount
+    ) external {
         _mint(to, amount);
     }
+
 }
 
 /// @title RolesAuthorityHandler
 /// @notice Fuzzing handler that simulates random role/capability operations
 contract RolesAuthorityHandler is Test {
+
     RolesAuthority public authority;
     address public owner;
     address[] public actors;
@@ -56,7 +62,11 @@ contract RolesAuthorityHandler is Test {
     }
 
     /// @notice Attempt to grant a role from a non-owner actor
-    function attemptGrantRole(uint256 actorSeed, uint256 targetSeed, uint8 role) external {
+    function attemptGrantRole(
+        uint256 actorSeed,
+        uint256 targetSeed,
+        uint8 role
+    ) external {
         callCount++;
         address actor = actors[actorSeed % actors.length];
         address target = actors[targetSeed % actors.length];
@@ -72,7 +82,12 @@ contract RolesAuthorityHandler is Test {
     }
 
     /// @notice Attempt to set capability from a non-owner actor
-    function attemptSetCapability(uint256 actorSeed, uint256 targetSeed, uint256 selectorSeed, uint8 role) external {
+    function attemptSetCapability(
+        uint256 actorSeed,
+        uint256 targetSeed,
+        uint256 selectorSeed,
+        uint8 role
+    ) external {
         callCount++;
         address actor = actors[actorSeed % actors.length];
         address target = targets[targetSeed % targets.length];
@@ -89,7 +104,11 @@ contract RolesAuthorityHandler is Test {
     }
 
     /// @notice Attempt to set public capability from non-owner
-    function attemptSetPublicCapability(uint256 actorSeed, uint256 targetSeed, uint256 selectorSeed) external {
+    function attemptSetPublicCapability(
+        uint256 actorSeed,
+        uint256 targetSeed,
+        uint256 selectorSeed
+    ) external {
         callCount++;
         address actor = actors[actorSeed % actors.length];
         address target = targets[targetSeed % targets.length];
@@ -104,11 +123,13 @@ contract RolesAuthorityHandler is Test {
             successfulEscalations++;
         } catch {}
     }
+
 }
 
 /// @title ProtocolHandler
 /// @notice Fuzzing handler that simulates protocol operations with various roles
 contract ProtocolHandler is Test {
+
     RolesAuthority public authority;
     FeeVault public feeVault;
     MEVProtector public mevProtector;
@@ -156,7 +177,9 @@ contract ProtocolHandler is Test {
     }
 
     /// @notice Vault depositor deposits (should succeed)
-    function depositorDeposit(uint256 amount) external {
+    function depositorDeposit(
+        uint256 amount
+    ) external {
         amount = bound(amount, 1e18, 10_000e18);
 
         vm.startPrank(vaultDepositor);
@@ -166,7 +189,9 @@ contract ProtocolHandler is Test {
     }
 
     /// @notice Vault depositor attempts withdrawal (should fail - P0 invariant)
-    function depositorAttemptWithdraw(uint256 amount) external {
+    function depositorAttemptWithdraw(
+        uint256 amount
+    ) external {
         amount = bound(amount, 1e18, 10_000e18);
         uint256 shares = feeVault.balanceOf(vaultDepositor);
         if (shares == 0) return;
@@ -180,7 +205,9 @@ contract ProtocolHandler is Test {
     }
 
     /// @notice Attacker attempts withdrawal (should fail)
-    function attackerAttemptWithdraw(uint256 amount) external {
+    function attackerAttemptWithdraw(
+        uint256 amount
+    ) external {
         amount = bound(amount, 1e18, 10_000e18);
 
         unauthorizedWithdrawAttempts++;
@@ -212,7 +239,9 @@ contract ProtocolHandler is Test {
     }
 
     /// @notice Attacker attempts whitelist modification (should fail)
-    function attackerAttemptWhitelist(address target) external {
+    function attackerAttemptWhitelist(
+        address target
+    ) external {
         unauthorizedWhitelistAttempts++;
 
         vm.prank(attacker);
@@ -222,7 +251,9 @@ contract ProtocolHandler is Test {
     }
 
     /// @notice Executor attempts whitelist (should fail - wrong role)
-    function executorAttemptWhitelist(address target) external {
+    function executorAttemptWhitelist(
+        address target
+    ) external {
         unauthorizedWhitelistAttempts++;
 
         vm.prank(executor);
@@ -230,11 +261,13 @@ contract ProtocolHandler is Test {
             successfulUnauthorizedWhitelists++;
         } catch {}
     }
+
 }
 
 /// @title RolesInvariantTest
 /// @notice Invariant/fuzz tests proving no privilege escalation paths exist
 contract RolesInvariantTest is StdInvariant, Test {
+
     RolesAuthority authority;
     MockToken token;
     FeeVault feeVault;
@@ -540,4 +573,5 @@ contract RolesInvariantTest is StdInvariant, Test {
         console.log("Unauthorized whitelist attempts:", protocolHandler.unauthorizedWhitelistAttempts());
         console.log("Successful unauthorized whitelists:", protocolHandler.successfulUnauthorizedWhitelists());
     }
+
 }

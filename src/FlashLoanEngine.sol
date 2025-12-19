@@ -9,6 +9,7 @@ import {SafeTransferLib} from "superlib/transfer/SafeTransferLib.sol";
 /// @notice Manages flash loan providers and executes zero-capital arbitrage
 /// @dev Uses Superlib Auth for role-based access control
 contract FlashLoanEngine is Auth, ReentrancyGuard {
+
     using SafeTransferLib for address;
 
     /*//////////////////////////////////////////////////////////////
@@ -66,13 +67,20 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                          PROVIDER MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function addProvider(bytes32 providerId, address provider, uint256 feeBps) external requiresAuth {
+    function addProvider(
+        bytes32 providerId,
+        address provider,
+        uint256 feeBps
+    ) external requiresAuth {
         if (provider == address(0)) revert ZeroAddress();
         if (feeBps > MAX_FEE_BPS) revert FeeExceedsMax(feeBps, MAX_FEE_BPS);
         if (providers[providerId].provider != address(0)) revert ProviderAlreadyExists(providerId);
@@ -83,7 +91,9 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
         emit ProviderAdded(providerId, provider, feeBps);
     }
 
-    function removeProvider(bytes32 providerId) external requiresAuth {
+    function removeProvider(
+        bytes32 providerId
+    ) external requiresAuth {
         if (providers[providerId].provider == address(0)) revert ProviderNotFound(providerId);
 
         delete providers[providerId];
@@ -99,7 +109,11 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
         emit ProviderRemoved(providerId);
     }
 
-    function updateProvider(bytes32 providerId, uint256 newFeeBps, bool active) external requiresAuth {
+    function updateProvider(
+        bytes32 providerId,
+        uint256 newFeeBps,
+        bool active
+    ) external requiresAuth {
         if (providers[providerId].provider == address(0)) revert ProviderNotFound(providerId);
         if (newFeeBps > MAX_FEE_BPS) revert FeeExceedsMax(newFeeBps, MAX_FEE_BPS);
 
@@ -113,19 +127,28 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
                          WHITELIST MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function setDexRouterWhitelist(address router, bool status) external requiresAuth {
+    function setDexRouterWhitelist(
+        address router,
+        bool status
+    ) external requiresAuth {
         if (router == address(0)) revert ZeroAddress();
         whitelistedDexRouters[router] = status;
         emit DexRouterWhitelistUpdated(router, status);
     }
 
-    function setExecutorStatus(address executor, bool status) external requiresAuth {
+    function setExecutorStatus(
+        address executor,
+        bool status
+    ) external requiresAuth {
         if (executor == address(0)) revert ZeroAddress();
         authorizedExecutors[executor] = status;
         emit ExecutorUpdated(executor, status);
     }
 
-    function setSlippageLimits(uint256 _defaultBps, uint256 _maxBps) external requiresAuth {
+    function setSlippageLimits(
+        uint256 _defaultBps,
+        uint256 _maxBps
+    ) external requiresAuth {
         if (_defaultBps > _maxBps) revert SlippageExceedsMax(_defaultBps, _maxBps);
         defaultSlippageBps = _defaultBps;
         maxSlippageBps = _maxBps;
@@ -183,7 +206,9 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getProvider(bytes32 providerId) external view returns (FlashLoanProvider memory) {
+    function getProvider(
+        bytes32 providerId
+    ) external view returns (FlashLoanProvider memory) {
         return providers[providerId];
     }
 
@@ -195,7 +220,10 @@ contract FlashLoanEngine is Auth, ReentrancyGuard {
         return providerIds;
     }
 
-    function isProviderActive(bytes32 providerId) external view returns (bool) {
+    function isProviderActive(
+        bytes32 providerId
+    ) external view returns (bool) {
         return providers[providerId].active;
     }
+
 }

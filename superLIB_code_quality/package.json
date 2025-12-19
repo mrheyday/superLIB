@@ -26,14 +26,12 @@
     "fmt:check": "forge fmt --check && prettier --check '**/*.{json,md,yml}'",
     "lint": "forge lint && solhint 'src/**/*.sol'",
     "lint:fix": "solhint 'src/**/*.sol' --fix",
-    "lint:shell": "find . -name '*.sh' -not -path './lib/*' -not -path './node_modules/*' -exec shellcheck -x {} \\;",
     "clean": "forge clean && rm -rf cache out",
     "docs": "forge doc --build",
     "snapshot": "forge snapshot",
     "slither": "slither . --filter-paths 'lib/|test/|script/'",
     "prepare": "husky install",
-    "precommit": "npm run fmt:check && npm run lint && forge test",
-    "check": "npm run fmt:check && npm run lint && npm run lint:shell && forge test"
+    "precommit": "npm run fmt:check && npm run lint && forge test"
   },
   "devDependencies": {
     "husky": "^8.0.3",

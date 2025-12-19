@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "superlib/security/ReentrancyLib.sol";
 /// @notice Rate-limited execution with security score validation and dual whitelisting
 /// @dev Uses Superlib Auth for role-based access control
 contract MaximumSecurityEngine is Auth, ReentrancyGuard {
+
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -66,7 +67,10 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {
         securityConfig =
             SecurityConfig({minSecurityScore: 50, requiresCommitment: false, maxValuePerCall: type(uint256).max});
     }
@@ -75,12 +79,12 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
                           SECURE EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeWithMaximumSecurity(address target, bytes4 selector, bytes calldata params, address userAddress)
-        external
-        nonReentrant
-        requiresAuth
-        returns (bool success, bytes memory result)
-    {
+    function executeWithMaximumSecurity(
+        address target,
+        bytes4 selector,
+        bytes calldata params,
+        address userAddress
+    ) external nonReentrant requiresAuth returns (bool success, bytes memory result) {
         // Validate whitelists
         if (!whitelistedTargets[target]) revert TargetNotWhitelisted(target);
         if (!whitelistedSelectors[target][selector]) revert SelectorNotWhitelisted(target, selector);
@@ -117,7 +121,11 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
                          CONFIG MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function setSecurityConfig(uint256 minScore, bool requiresCommitment, uint256 maxValue) external requiresAuth {
+    function setSecurityConfig(
+        uint256 minScore,
+        bool requiresCommitment,
+        uint256 maxValue
+    ) external requiresAuth {
         if (minScore > MAX_SECURITY_SCORE) revert InvalidSecurityScore(minScore);
 
         securityConfig = SecurityConfig({
@@ -127,7 +135,10 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
         emit SecurityConfigUpdated(minScore, requiresCommitment, maxValue);
     }
 
-    function setUserSecurityScore(address user, uint256 score) external requiresAuth {
+    function setUserSecurityScore(
+        address user,
+        uint256 score
+    ) external requiresAuth {
         if (user == address(0)) revert ZeroAddress();
         if (score > MAX_SECURITY_SCORE) revert InvalidSecurityScore(score);
 
@@ -137,13 +148,20 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
         emit SecurityScoreUpdated(user, oldScore, score);
     }
 
-    function setTargetWhitelist(address target, bool status) external requiresAuth {
+    function setTargetWhitelist(
+        address target,
+        bool status
+    ) external requiresAuth {
         if (target == address(0)) revert ZeroAddress();
         whitelistedTargets[target] = status;
         emit TargetWhitelistUpdated(target, status);
     }
 
-    function setSelectorWhitelist(address target, bytes4 selector, bool status) external requiresAuth {
+    function setSelectorWhitelist(
+        address target,
+        bytes4 selector,
+        bool status
+    ) external requiresAuth {
         if (target == address(0)) revert ZeroAddress();
         whitelistedSelectors[target][selector] = status;
         emit SelectorWhitelistUpdated(target, selector, status);
@@ -153,7 +171,9 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getRateLimitStatus(address user) external view returns (uint256 remaining, uint256 resetTime) {
+    function getRateLimitStatus(
+        address user
+    ) external view returns (uint256 remaining, uint256 resetTime) {
         RateLimitInfo memory info = rateLimits[user];
         uint256 periodEnd = info.periodStart + RATE_LIMIT_PERIOD;
 
@@ -165,7 +185,11 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
         resetTime = periodEnd;
     }
 
-    function canExecute(address user, address target, bytes4 selector) external view returns (bool) {
+    function canExecute(
+        address user,
+        address target,
+        bytes4 selector
+    ) external view returns (bool) {
         if (!whitelistedTargets[target]) return false;
         if (!whitelistedSelectors[target][selector]) return false;
         if (userSecurityScores[user] < securityConfig.minSecurityScore) return false;
@@ -177,4 +201,5 @@ contract MaximumSecurityEngine is Auth, ReentrancyGuard {
 
         return true;
     }
+
 }

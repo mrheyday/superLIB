@@ -7,6 +7,7 @@ import {Auth, Authority} from "superlib/auth/Auth.sol";
 /// @notice Manages arbitrage strategies with bounded arrays and pagination
 /// @dev Uses Superlib Auth for role-based access control
 contract StrategyOrchestrator is Auth {
+
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -122,7 +123,7 @@ contract StrategyOrchestrator is Auth {
         if (currentCount > 0) {
             strategyTypeCount[strategy.strategyType] = currentCount - 1;
         }
-        
+
         delete strategies[strategyId];
 
         // Remove from array
@@ -231,7 +232,7 @@ contract StrategyOrchestrator is Auth {
         if (offset >= activeCount) {
             return (new bytes32[](0), total);
         }
-        
+
         uint256 remaining = activeCount - offset;
         uint256 returnCount = remaining < limit ? remaining : limit;
         bytes32[] memory result = new bytes32[](returnCount);
@@ -282,4 +283,5 @@ contract StrategyOrchestrator is Auth {
         }
         return result;
     }
+
 }

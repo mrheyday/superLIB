@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
-import {Authority} from "superlib/auth/Auth.sol";
 import {Roles} from "./roles/Roles.sol";
+import {Authority} from "superlib/auth/Auth.sol";
+import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
 
 /// @title RolesAuthorityVerified
 /// @author Superlib Arbitrage Protocol Team
@@ -15,6 +15,7 @@ import {Roles} from "./roles/Roles.sol";
 /// @custom:security Formal verification via Solidity SMTChecker (CHC + BMC)
 /// @custom:smtchecker abstract-function-nondet
 contract RolesAuthorityVerified is RolesAuthority {
+
     /*//////////////////////////////////////////////////////////////
                          STATE PROPERTY TRACKING
     //////////////////////////////////////////////////////////////*/
@@ -37,7 +38,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @dev SMTChecker verifies: owner is set correctly at construction
     /// @param _owner Address that will own the authority
     /// @param _authority Optional parent authority (usually address(0))
-    constructor(address _owner, Authority _authority) RolesAuthority(_owner, _authority) {
+    constructor(
+        address _owner,
+        Authority _authority
+    ) RolesAuthority(_owner, _authority) {
         originalOwner = _owner;
 
         // SMT Verification Target: Constructor sets owner correctly
@@ -51,7 +55,9 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Mark address as adversary (cannot ever receive roles)
     /// @dev Used to model attackers for formal verification
     /// @param account Address to blacklist
-    function blacklist(address account) external requiresAuth {
+    function blacklist(
+        address account
+    ) external requiresAuth {
         require(account != owner, "CANNOT_BLACKLIST_OWNER");
         require(account != address(0), "ZERO_ADDRESS");
         isBlacklisted[account] = true;
@@ -60,7 +66,9 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Check if address is blacklisted
     /// @param account Address to check
     /// @return True if blacklisted
-    function checkBlacklisted(address account) external view returns (bool) {
+    function checkBlacklisted(
+        address account
+    ) external view returns (bool) {
         return isBlacklisted[account];
     }
 
@@ -75,7 +83,11 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @param user Address to modify roles for
     /// @param role Role ID (0-255) to set
     /// @param enabled True to grant, false to revoke
-    function setUserRole(address user, uint8 role, bool enabled) public virtual override requiresAuth {
+    function setUserRole(
+        address user,
+        uint8 role,
+        bool enabled
+    ) public virtual override requiresAuth {
         // PRECONDITION: Blacklisted cannot gain roles
         if (enabled) {
             require(!isBlacklisted[user], "USER_BLACKLISTED");
@@ -120,7 +132,11 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @param target Contract being called
     /// @param functionSig Function selector being called
     /// @return Whether user is authorized
-    function canCall(address user, address target, bytes4 functionSig) public view virtual override returns (bool) {
+    function canCall(
+        address user,
+        address target,
+        bytes4 functionSig
+    ) public view virtual override returns (bool) {
         bool result = super.canCall(user, target, functionSig);
 
         // INVARIANT 1: Zero-role users can only call public functions
@@ -144,7 +160,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @dev Call after wiring capabilities to formally prove P0 fix
     /// @param vaultAddress FeeVault contract address
     /// @param withdrawSelector bytes4(keccak256("withdraw(uint256,address,address)"))
-    function verifyP0_DepositorCannotWithdraw(address vaultAddress, bytes4 withdrawSelector) external view {
+    function verifyP0_DepositorCannotWithdraw(
+        address vaultAddress,
+        bytes4 withdrawSelector
+    ) external view {
         bytes32 withdrawCap = getRolesWithCapability[vaultAddress][withdrawSelector];
 
         // VAULT_DEPOSITOR (role 7) bit must NOT be set
@@ -157,7 +176,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Verify P0: VAULT_DEPOSITOR cannot have redeem capability
     /// @param vaultAddress FeeVault contract address
     /// @param redeemSelector bytes4(keccak256("redeem(uint256,address,address)"))
-    function verifyP0_DepositorCannotRedeem(address vaultAddress, bytes4 redeemSelector) external view {
+    function verifyP0_DepositorCannotRedeem(
+        address vaultAddress,
+        bytes4 redeemSelector
+    ) external view {
         bytes32 redeemCap = getRolesWithCapability[vaultAddress][redeemSelector];
         uint256 depositorBit = uint256(1) << Roles.VAULT_DEPOSITOR;
 
@@ -167,7 +189,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Verify P0: Only ADMIN and GUARDIAN can pause
     /// @param vaultAddress FeeVault contract address
     /// @param pauseSelector bytes4(keccak256("pause()"))
-    function verifyP0_PauseRestriction(address vaultAddress, bytes4 pauseSelector) external view {
+    function verifyP0_PauseRestriction(
+        address vaultAddress,
+        bytes4 pauseSelector
+    ) external view {
         bytes32 pauseCap = getRolesWithCapability[vaultAddress][pauseSelector];
 
         // Only ADMIN (0) and GUARDIAN (8) allowed
@@ -186,7 +211,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Verify P1: EXECUTOR cannot modify whitelists
     /// @param mevProtectorAddress MEVProtector contract
     /// @param setWhitelistSelector bytes4(keccak256("setTargetWhitelist(address,bool)"))
-    function verifyP1_ExecutorNoWhitelist(address mevProtectorAddress, bytes4 setWhitelistSelector) external view {
+    function verifyP1_ExecutorNoWhitelist(
+        address mevProtectorAddress,
+        bytes4 setWhitelistSelector
+    ) external view {
         bytes32 whitelistCap = getRolesWithCapability[mevProtectorAddress][setWhitelistSelector];
         uint256 executorBit = uint256(1) << Roles.EXECUTOR;
 
@@ -196,7 +224,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Verify P1: FEE_UPDATER cannot pause
     /// @param vaultAddress FeeVault contract
     /// @param pauseSelector bytes4(keccak256("pause()"))
-    function verifyP1_FeeUpdaterNoPause(address vaultAddress, bytes4 pauseSelector) external view {
+    function verifyP1_FeeUpdaterNoPause(
+        address vaultAddress,
+        bytes4 pauseSelector
+    ) external view {
         bytes32 pauseCap = getRolesWithCapability[vaultAddress][pauseSelector];
         uint256 feeUpdaterBit = uint256(1) << Roles.FEE_UPDATER;
 
@@ -206,7 +237,10 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Verify P1: ARBITRAGE_MANAGER cannot withdraw from vault
     /// @param vaultAddress FeeVault contract
     /// @param withdrawSelector bytes4(keccak256("withdraw(uint256,address,address)"))
-    function verifyP1_ArbitrageManagerNoWithdraw(address vaultAddress, bytes4 withdrawSelector) external view {
+    function verifyP1_ArbitrageManagerNoWithdraw(
+        address vaultAddress,
+        bytes4 withdrawSelector
+    ) external view {
         bytes32 withdrawCap = getRolesWithCapability[vaultAddress][withdrawSelector];
         uint256 arbManagerBit = uint256(1) << Roles.ARBITRAGE_MANAGER;
 
@@ -227,7 +261,9 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice Simulate ownership transfer and verify invariants
     /// @dev For testing transfer scenarios with SMTChecker
     /// @param newOwner Proposed new owner
-    function verifyOwnershipTransfer(address newOwner) external view {
+    function verifyOwnershipTransfer(
+        address newOwner
+    ) external view {
         // New owner must not be blacklisted
         require(!isBlacklisted[newOwner], "NEW_OWNER_BLACKLISTED");
 
@@ -245,7 +281,9 @@ contract RolesAuthorityVerified is RolesAuthority {
     /// @notice External call simulation for reentrancy analysis
     /// @dev CHC engine will analyze if reentrancy can violate invariants
     /// @param target External contract to call
-    function simulateExternalCall(address target) external {
+    function simulateExternalCall(
+        address target
+    ) external {
         // Store pre-call state
         bytes32 preRoles = getUserRoles[msg.sender];
         bool preBlacklisted = isBlacklisted[msg.sender];
@@ -261,4 +299,5 @@ contract RolesAuthorityVerified is RolesAuthority {
             assert(isBlacklisted[msg.sender]);
         }
     }
+
 }

@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC1091
+. "$(dirname -- "$0")/_/husky.sh"
+
+set -euo pipefail
+
+echo "🔍 Running pre-commit checks..."
+
+# Format check
+echo "📝 Checking formatting..."
+if ! forge fmt --check; then
+    echo "❌ Formatting check failed. Run 'forge fmt' to fix."
+    exit 1
+fi
+
+# Lint
+echo "🔎 Running linter..."
+forge lint 2>/dev/null || true
+
+# Build
+echo "🔨 Building..."
+if ! forge build --sizes; then
+    echo "❌ Build failed."
+    exit 1
+fi
+
+# Test
+echo "🧪 Running tests..."
+if ! forge test; then
+    echo "❌ Tests failed."
+    exit 1
+fi
+
+# Security patterns check
+echo "🔒 Checking security patterns..."
+
+if grep -rn "tx\.origin" src/ --include="*.sol" 2>/dev/null; then
+    echo "⚠️  Warning: tx.origin usage detected"
+fi
+
+if grep -rn "selfdestruct\|suicide" src/ --include="*.sol" 2>/dev/null; then
+    echo "⚠️  Warning: selfdestruct usage detected"
+fi
+
+echo "✅ All pre-commit checks passed!"

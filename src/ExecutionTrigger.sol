@@ -7,6 +7,7 @@ import {Auth, Authority} from "superlib/auth/Auth.sol";
 /// @notice Manages conditional execution triggers with bounded arrays
 /// @dev Uses Superlib Auth for role-based access control
 contract ExecutionTrigger is Auth {
+
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -61,16 +62,21 @@ contract ExecutionTrigger is Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                         TRIGGER MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function addTrigger(bytes32 triggerId, TriggerType triggerType, uint256 threshold, uint256 cooldown)
-        external
-        requiresAuth
-    {
+    function addTrigger(
+        bytes32 triggerId,
+        TriggerType triggerType,
+        uint256 threshold,
+        uint256 cooldown
+    ) external requiresAuth {
         if (triggerIds.length >= MAX_TRIGGERS) {
             revert MaxTriggersReached(triggerIds.length, MAX_TRIGGERS);
         }
@@ -91,7 +97,9 @@ contract ExecutionTrigger is Auth {
         emit TriggerAdded(triggerId, triggerType, threshold);
     }
 
-    function removeTrigger(bytes32 triggerId) external requiresAuth {
+    function removeTrigger(
+        bytes32 triggerId
+    ) external requiresAuth {
         if (triggers[triggerId].threshold == 0 && !triggers[triggerId].active) {
             revert TriggerNotFound(triggerId);
         }
@@ -109,7 +117,10 @@ contract ExecutionTrigger is Auth {
         emit TriggerRemoved(triggerId);
     }
 
-    function updateThreshold(bytes32 triggerId, uint256 newThreshold) external requiresAuth {
+    function updateThreshold(
+        bytes32 triggerId,
+        uint256 newThreshold
+    ) external requiresAuth {
         if (triggers[triggerId].threshold == 0 && !triggers[triggerId].active) {
             revert TriggerNotFound(triggerId);
         }
@@ -117,7 +128,10 @@ contract ExecutionTrigger is Auth {
         emit TriggerUpdated(triggerId, newThreshold, triggers[triggerId].cooldown);
     }
 
-    function updateCooldown(bytes32 triggerId, uint256 newCooldown) external requiresAuth {
+    function updateCooldown(
+        bytes32 triggerId,
+        uint256 newCooldown
+    ) external requiresAuth {
         if (triggers[triggerId].threshold == 0 && !triggers[triggerId].active) {
             revert TriggerNotFound(triggerId);
         }
@@ -125,7 +139,10 @@ contract ExecutionTrigger is Auth {
         emit TriggerUpdated(triggerId, triggers[triggerId].threshold, newCooldown);
     }
 
-    function toggleTrigger(bytes32 triggerId, bool active) external requiresAuth {
+    function toggleTrigger(
+        bytes32 triggerId,
+        bool active
+    ) external requiresAuth {
         if (triggers[triggerId].threshold == 0 && !triggers[triggerId].active) {
             revert TriggerNotFound(triggerId);
         }
@@ -137,11 +154,9 @@ contract ExecutionTrigger is Auth {
                         TRIGGER EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function checkAndExecuteTriggers(uint256 currentValue)
-        external
-        requiresAuth
-        returns (bytes32[] memory firedTriggers)
-    {
+    function checkAndExecuteTriggers(
+        uint256 currentValue
+    ) external requiresAuth returns (bytes32[] memory firedTriggers) {
         uint256 firedCount = 0;
         bytes32[] memory tempFired = new bytes32[](triggerIds.length);
 
@@ -173,7 +188,9 @@ contract ExecutionTrigger is Auth {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getTrigger(bytes32 triggerId) external view returns (Trigger memory) {
+    function getTrigger(
+        bytes32 triggerId
+    ) external view returns (Trigger memory) {
         return triggers[triggerId];
     }
 
@@ -197,10 +214,14 @@ contract ExecutionTrigger is Auth {
         return active;
     }
 
-    function canTriggerFire(bytes32 triggerId, uint256 currentValue) external view returns (bool) {
+    function canTriggerFire(
+        bytes32 triggerId,
+        uint256 currentValue
+    ) external view returns (bool) {
         Trigger memory trigger = triggers[triggerId];
         if (!trigger.active) return false;
         if (block.timestamp < trigger.lastTriggered + trigger.cooldown) return false;
         return currentValue >= trigger.threshold;
     }
+
 }

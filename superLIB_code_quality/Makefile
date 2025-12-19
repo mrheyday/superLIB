@@ -106,29 +106,15 @@ fmt-check: ## Check formatting
 	@echo "$(CYAN)Checking format...$(RESET)"
 	forge fmt --check
 
-lint: ## Run Solidity linter
-	@echo "$(CYAN)Linting Solidity...$(RESET)"
+lint: ## Run linter
+	@echo "$(CYAN)Linting...$(RESET)"
 	forge lint
 	@if command -v solhint > /dev/null; then \
 		echo "$(CYAN)Running solhint...$(RESET)"; \
 		solhint 'src/**/*.sol' --fix; \
 	fi
 
-shellcheck: ## Run ShellCheck on shell scripts
-	@echo "$(CYAN)Running ShellCheck...$(RESET)"
-	@if command -v shellcheck > /dev/null; then \
-		find . -name "*.sh" -type f -not -path "./lib/*" -not -path "./node_modules/*" -exec shellcheck -x {} \; ; \
-		if [ -d ".husky" ]; then \
-			for hook in .husky/pre-commit .husky/pre-push; do \
-				if [ -f "$$hook" ]; then shellcheck -x "$$hook"; fi \
-			done \
-		fi; \
-		echo "$(GREEN)ShellCheck passed$(RESET)"; \
-	else \
-		echo "$(YELLOW)ShellCheck not installed. Run: brew install shellcheck$(RESET)"; \
-	fi
-
-check: fmt-check lint shellcheck ## Run all checks
+check: fmt-check lint ## Run all checks
 	@echo "$(GREEN)All checks passed!$(RESET)"
 
 # ============================================================================

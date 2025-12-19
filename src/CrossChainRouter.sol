@@ -9,6 +9,7 @@ import {SafeTransferLib} from "superlib/transfer/SafeTransferLib.sol";
 /// @notice Manages cross-chain trade execution with timelock-protected configuration
 /// @dev Uses Superlib Auth for role-based access control
 contract CrossChainRouter is Auth, ReentrancyGuard {
+
     using SafeTransferLib for address;
 
     /*//////////////////////////////////////////////////////////////
@@ -180,7 +181,7 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
             // Check if first 32 bytes could be a bool indicating failure
             // Pattern: Some bridges return (false, reason) on semantic failure
             bytes32 firstWord = abi.decode(result, (bytes32));
-            
+
             // If bridge returns a message ID (non-zero), extract it
             if (firstWord != bytes32(0)) {
                 messageId = firstWord;
@@ -249,4 +250,5 @@ contract CrossChainRouter is Auth, ReentrancyGuard {
     ) external view returns (bool) {
         return chainConfigs[chainId].active;
     }
+
 }

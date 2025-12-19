@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+    branches: [master, main, develop]
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Show Forge version
+        run: forge --version
+
+      - name: Install dependencies
+        run: forge install
+
+      - name: Build contracts
+        run: forge build --sizes
+        id: build
+
+      - name: Run tests
+        run: forge test -vvv
+        id: test
+
+      - name: Run gas snapshot
+        run: forge snapshot --check || forge snapshot
+        continue-on-error: true
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check formatting
+        run: forge fmt --check
+        id: fmt
+
+      - name: Run linter
+        run: forge lint
+        continue-on-error: true
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run coverage
+        run: forge coverage --report lcov
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./lcov.info
+          fail_ci_if_error: false
+
+  slither:
+    name: Slither Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Build for Slither
+        run: forge build --build-info
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.0
+        id: slither
+        with:
+          fail-on: none
+          slither-args: --filter-paths "lib/|test/|script/"
+        continue-on-error: true
+
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check for common vulnerabilities
+        run: |
+          echo "Checking for dangerous patterns..."
+          
+          # Check for arbitrary call with user data
+          if grep -rn "\.call(.*data" src/ --include="*.sol" | grep -v "// SAFE:" | grep -v test; then
+            echo "⚠️  WARNING: Found potential arbitrary call patterns"
+          fi
+          
+          # Check for tx.origin
+          if grep -rn "tx\.origin" src/ --include="*.sol"; then
+            echo "⚠️  WARNING: Found tx.origin usage"
+          fi
+          
+          # Check for selfdestruct
+          if grep -rn "selfdestruct\|suicide" src/ --include="*.sol"; then
+            echo "⚠️  WARNING: Found selfdestruct usage"
+          fi
+          
+          echo "✅ Security pattern check complete"

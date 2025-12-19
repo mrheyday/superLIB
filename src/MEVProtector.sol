@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "superlib/security/ReentrancyLib.sol";
 /// @notice Commit-reveal scheme with target/selector whitelisting for MEV protection
 /// @dev Uses Superlib Auth for role-based access control
 contract MEVProtector is Auth, ReentrancyGuard {
+
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -58,23 +59,27 @@ contract MEVProtector is Auth, ReentrancyGuard {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                            COMMIT-REVEAL LOGIC
     //////////////////////////////////////////////////////////////*/
 
-    function commitExecution(bytes32 commitHash) external {
+    function commitExecution(
+        bytes32 commitHash
+    ) external {
         commitments[msg.sender] = Commitment({hash: commitHash, blockNumber: block.number});
         emit CommitmentMade(msg.sender, commitHash, block.number);
     }
 
-    function executeProtectedArbitrage(address target, bytes calldata data, bytes32 salt)
-        external
-        nonReentrant
-        requiresAuth
-        returns (bool success, bytes memory result)
-    {
+    function executeProtectedArbitrage(
+        address target,
+        bytes calldata data,
+        bytes32 salt
+    ) external nonReentrant requiresAuth returns (bool success, bytes memory result) {
         // Validate whitelist
         if (!whitelistedTargets[target]) revert TargetNotWhitelisted(target);
 
@@ -121,19 +126,29 @@ contract MEVProtector is Auth, ReentrancyGuard {
                          WHITELIST MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function setTargetWhitelist(address target, bool status) external requiresAuth {
+    function setTargetWhitelist(
+        address target,
+        bool status
+    ) external requiresAuth {
         if (target == address(0)) revert ZeroAddress();
         whitelistedTargets[target] = status;
         emit TargetWhitelistUpdated(target, status);
     }
 
-    function setSelectorWhitelist(address target, bytes4 selector, bool status) external requiresAuth {
+    function setSelectorWhitelist(
+        address target,
+        bytes4 selector,
+        bool status
+    ) external requiresAuth {
         if (target == address(0)) revert ZeroAddress();
         whitelistedSelectors[target][selector] = status;
         emit SelectorWhitelistUpdated(target, selector, status);
     }
 
-    function batchSetTargetWhitelist(address[] calldata targets, bool[] calldata statuses) external requiresAuth {
+    function batchSetTargetWhitelist(
+        address[] calldata targets,
+        bool[] calldata statuses
+    ) external requiresAuth {
         require(targets.length == statuses.length, "LENGTH_MISMATCH");
         for (uint256 i = 0; i < targets.length; i++) {
             if (targets[i] == address(0)) revert ZeroAddress();
@@ -159,12 +174,16 @@ contract MEVProtector is Auth, ReentrancyGuard {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getCommitment(address user) external view returns (bytes32 hash, uint256 blockNumber) {
+    function getCommitment(
+        address user
+    ) external view returns (bytes32 hash, uint256 blockNumber) {
         Commitment memory c = commitments[user];
         return (c.hash, c.blockNumber);
     }
 
-    function canExecute(address user) external view returns (bool) {
+    function canExecute(
+        address user
+    ) external view returns (bool) {
         Commitment memory c = commitments[user];
         if (c.hash == bytes32(0)) return false;
         uint256 blocksPassed = block.number - c.blockNumber;
@@ -172,4 +191,5 @@ contract MEVProtector is Auth, ReentrancyGuard {
         uint256 timeSinceLastExecution = block.timestamp - lastExecutionTime[user];
         return timeSinceLastExecution >= COOLDOWN_PERIOD;
     }
+
 }

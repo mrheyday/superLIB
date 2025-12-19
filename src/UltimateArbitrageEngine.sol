@@ -8,12 +8,12 @@ import {SafeTransferLib} from "superlib/transfer/SafeTransferLib.sol";
 /// @notice Structured swap instruction with explicit slippage protection
 /// @dev Replaces arbitrary calldata execution for security
 struct SwapInstruction {
-    address router;       // Must be whitelisted
-    address tokenIn;      // Input token
-    address tokenOut;     // Output token
-    uint256 amountIn;     // Input amount
-    uint256 minOut;       // Minimum output (slippage protection)
-    bytes swapCalldata;   // Router-specific calldata
+    address router; // Must be whitelisted
+    address tokenIn; // Input token
+    address tokenOut; // Output token
+    uint256 amountIn; // Input amount
+    uint256 minOut; // Minimum output (slippage protection)
+    bytes swapCalldata; // Router-specific calldata
 }
 
 /// @title UltimateArbitrageEngine
@@ -21,6 +21,7 @@ struct SwapInstruction {
 /// @dev Uses Superlib Auth for role-based access control
 /// @custom:security-contact security@example.com
 contract UltimateArbitrageEngine is Auth, ReentrancyGuard {
+
     using SafeTransferLib for address;
 
     /*//////////////////////////////////////////////////////////////
@@ -183,11 +184,7 @@ contract UltimateArbitrageEngine is Auth, ReentrancyGuard {
         // Using ERC-3156 interface: flashLoan(borrower, token, amount, data)
         (bool success,) = flashLoanPool.call(
             abi.encodeWithSignature(
-                "flashLoan(address,address,uint256,bytes)",
-                address(this),
-                token,
-                amount,
-                callbackData
+                "flashLoan(address,address,uint256,bytes)", address(this), token, amount, callbackData
             )
         );
         if (!success) revert ExecutionFailed();
@@ -257,7 +254,9 @@ contract UltimateArbitrageEngine is Auth, ReentrancyGuard {
 
     /// @dev Execute a sequence of swaps through whitelisted routers
     /// @custom:security Each swap has explicit slippage protection via minOut
-    function _executeSwaps(SwapInstruction[] memory swaps) internal {
+    function _executeSwaps(
+        SwapInstruction[] memory swaps
+    ) internal {
         for (uint256 i = 0; i < swaps.length; i++) {
             SwapInstruction memory swap = swaps[i];
 
@@ -292,15 +291,21 @@ contract UltimateArbitrageEngine is Auth, ReentrancyGuard {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function isPoolWhitelisted(address pool) external view returns (bool) {
+    function isPoolWhitelisted(
+        address pool
+    ) external view returns (bool) {
         return whitelistedFlashLoanPools[pool];
     }
 
-    function isRouterWhitelisted(address router) external view returns (bool) {
+    function isRouterWhitelisted(
+        address router
+    ) external view returns (bool) {
         return whitelistedDexRouters[router];
     }
 
-    function isExecutorAuthorized(address executor) external view returns (bool) {
+    function isExecutorAuthorized(
+        address executor
+    ) external view returns (bool) {
         return authorizedExecutors[executor];
     }
 
@@ -308,4 +313,5 @@ contract UltimateArbitrageEngine is Auth, ReentrancyGuard {
     function isInFlashLoan() external view returns (bool) {
         return _inFlashLoan;
     }
+
 }

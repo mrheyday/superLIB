@@ -1,30 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
-import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
-import {Authority} from "superlib/auth/Auth.sol";
-import {ERC20} from "superlib/core/ERC20.sol";
 import {Roles} from "../src/roles/Roles.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {Authority} from "superlib/auth/Auth.sol";
+import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
+import {ERC20} from "superlib/core/ERC20.sol";
 
-import {FeeVault} from "../src/FeeVault.sol";
-import {MEVProtector} from "../src/MEVProtector.sol";
-import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
-import {MaximumSecurityEngine} from "../src/MaximumSecurityEngine.sol";
-import {RiskEngine} from "../src/RiskEngine.sol";
-import {StrategyOrchestrator} from "../src/StrategyOrchestrator.sol";
-import {QuantumArbitrage} from "../src/QuantumArbitrage.sol";
-import {UltimateArbitrageEngine} from "../src/UltimateArbitrageEngine.sol";
-import {ExecutionTrigger} from "../src/ExecutionTrigger.sol";
-import {MinimumCostExecutor} from "../src/MinimumCostExecutor.sol";
-import {StrategyAnalytics} from "../src/StrategyAnalytics.sol";
 import {ExecutionAnalytics} from "../src/ExecutionAnalytics.sol";
+import {ExecutionTrigger} from "../src/ExecutionTrigger.sol";
+import {FeeVault} from "../src/FeeVault.sol";
+import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
 import {IntelligenceProcessor} from "../src/IntelligenceProcessor.sol";
+import {MEVProtector} from "../src/MEVProtector.sol";
+import {MaximumSecurityEngine} from "../src/MaximumSecurityEngine.sol";
+import {MinimumCostExecutor} from "../src/MinimumCostExecutor.sol";
+import {QuantumArbitrage} from "../src/QuantumArbitrage.sol";
+import {RiskEngine} from "../src/RiskEngine.sol";
+import {StrategyAnalytics} from "../src/StrategyAnalytics.sol";
+import {StrategyOrchestrator} from "../src/StrategyOrchestrator.sol";
+import {UltimateArbitrageEngine} from "../src/UltimateArbitrageEngine.sol";
 
 /// @title DeployWithRoles
 /// @notice Production deployment with corrected Solmate RolesAuthority wiring
 contract DeployWithRoles is Script {
+
     RolesAuthority public authority;
     FeeVault public feeVault;
     MEVProtector public mevProtector;
@@ -326,14 +327,24 @@ contract DeployWithRoles is Script {
             true
         );
     }
+
 }
 
 contract MockERC20 is ERC20 {
-    constructor(string memory name, string memory symbol, uint8 decimals_) ERC20(name, symbol, decimals_) {
+
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 decimals_
+    ) ERC20(name, symbol, decimals_) {
         _mint(msg.sender, 1_000_000 * 10 ** decimals_);
     }
 
-    function mint(address to, uint256 amount) external {
+    function mint(
+        address to,
+        uint256 amount
+    ) external {
         _mint(to, amount);
     }
+
 }

@@ -7,6 +7,7 @@ import {Auth, Authority} from "superlib/auth/Auth.sol";
 /// @notice Tracks execution-level analytics and gas metrics
 /// @dev Uses Superlib Auth for role-based access control
 contract ExecutionAnalytics is Auth {
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -35,16 +36,22 @@ contract ExecutionAnalytics is Auth {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
+    constructor(
+        address _owner,
+        Authority _authority
+    ) Auth(_owner, _authority) {}
 
     /*//////////////////////////////////////////////////////////////
                          ANALYTICS RECORDING
     //////////////////////////////////////////////////////////////*/
 
-    function recordExecution(bytes32 executionId, uint256 gasUsed, uint256 gasPrice, uint256 profit, bool success)
-        external
-        requiresAuth
-    {
+    function recordExecution(
+        bytes32 executionId,
+        uint256 gasUsed,
+        uint256 gasPrice,
+        uint256 profit,
+        bool success
+    ) external requiresAuth {
         executionHistory[executionId].push(
             ExecutionRecord({
                 timestamp: block.timestamp, gasUsed: gasUsed, gasPrice: gasPrice, profit: profit, success: success
@@ -62,15 +69,21 @@ contract ExecutionAnalytics is Auth {
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getExecutionHistory(bytes32 executionId) external view returns (ExecutionRecord[] memory) {
+    function getExecutionHistory(
+        bytes32 executionId
+    ) external view returns (ExecutionRecord[] memory) {
         return executionHistory[executionId];
     }
 
-    function getExecutionCount(bytes32 executionId) external view returns (uint256) {
+    function getExecutionCount(
+        bytes32 executionId
+    ) external view returns (uint256) {
         return executionHistory[executionId].length;
     }
 
-    function getAverageGasUsed(bytes32 executionId) external view returns (uint256) {
+    function getAverageGasUsed(
+        bytes32 executionId
+    ) external view returns (uint256) {
         ExecutionRecord[] memory history = executionHistory[executionId];
         if (history.length == 0) return 0;
 
@@ -84,4 +97,5 @@ contract ExecutionAnalytics is Auth {
     function getProtocolStats() external view returns (uint256 executions, uint256 gas) {
         return (totalExecutions, totalGasUsed);
     }
+
 }

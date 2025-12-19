@@ -8,6 +8,7 @@ import {ReentrancyGuard} from "superlib/security/ReentrancyLib.sol";
 /// @notice Orchestrates flash loan and risk engines with timelock-protected updates
 /// @dev Uses Superlib Auth for role-based access control
 contract QuantumArbitrage is Auth, ReentrancyGuard {
+
     /*//////////////////////////////////////////////////////////////
                                 CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -62,9 +63,12 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _owner, Authority _authority, address _flashLoanEngine, address _riskEngine)
-        Auth(_owner, _authority)
-    {
+    constructor(
+        address _owner,
+        Authority _authority,
+        address _flashLoanEngine,
+        address _riskEngine
+    ) Auth(_owner, _authority) {
         if (_flashLoanEngine == address(0) || _riskEngine == address(0)) revert ZeroAddress();
         flashLoanEngine = _flashLoanEngine;
         riskEngine = _riskEngine;
@@ -74,7 +78,9 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
                       TIMELOCK ENGINE UPDATES
     //////////////////////////////////////////////////////////////*/
 
-    function queueFlashLoanEngineUpdate(address newEngine) external requiresAuth {
+    function queueFlashLoanEngineUpdate(
+        address newEngine
+    ) external requiresAuth {
         if (newEngine == address(0)) revert ZeroAddress();
 
         uint256 executeAfter = block.timestamp + ENGINE_UPDATE_TIMELOCK;
@@ -97,7 +103,9 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
         emit FlashLoanEngineUpdated(oldEngine, pending.newEngine);
     }
 
-    function queueRiskEngineUpdate(address newEngine) external requiresAuth {
+    function queueRiskEngineUpdate(
+        address newEngine
+    ) external requiresAuth {
         if (newEngine == address(0)) revert ZeroAddress();
 
         uint256 executeAfter = block.timestamp + ENGINE_UPDATE_TIMELOCK;
@@ -136,7 +144,9 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
                         ARBITRAGE EXECUTION
     //////////////////////////////////////////////////////////////*/
 
-    function executeArbitrage(bytes calldata executionData) external nonReentrant requiresAuth returns (bool) {
+    function executeArbitrage(
+        bytes calldata executionData
+    ) external nonReentrant requiresAuth returns (bool) {
         // Check block execution limit
         uint256 currentCount = blockExecutionCount[block.number];
         if (currentCount >= maxExecutionsPerBlock) {
@@ -168,12 +178,16 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
                          CONFIG MANAGEMENT
     //////////////////////////////////////////////////////////////*/
 
-    function setMinRiskScore(uint256 newScore) external requiresAuth {
+    function setMinRiskScore(
+        uint256 newScore
+    ) external requiresAuth {
         emit MinRiskScoreUpdated(minRiskScore, newScore);
         minRiskScore = newScore;
     }
 
-    function setMaxExecutionsPerBlock(uint256 newMax) external requiresAuth {
+    function setMaxExecutionsPerBlock(
+        uint256 newMax
+    ) external requiresAuth {
         emit MaxExecutionsUpdated(maxExecutionsPerBlock, newMax);
         maxExecutionsPerBlock = newMax;
     }
@@ -196,4 +210,5 @@ contract QuantumArbitrage is Auth, ReentrancyGuard {
         uint256 current = blockExecutionCount[block.number];
         return current >= maxExecutionsPerBlock ? 0 : maxExecutionsPerBlock - current;
     }
+
 }

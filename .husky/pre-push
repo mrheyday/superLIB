@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC1091
+. "$(dirname -- "$0")/_/husky.sh"
+
+set -euo pipefail
+
+echo "🚀 Running pre-push checks..."
+
+# Full test suite
+echo "🧪 Running full test suite..."
+if ! forge test -vvv; then
+    echo "❌ Tests failed. Push aborted."
+    exit 1
+fi
+
+# Gas snapshot check
+echo "⛽ Checking gas snapshot..."
+if ! forge snapshot --check 2>/dev/null; then
+    echo "⚠️  Gas snapshot differs. Consider updating with 'forge snapshot'"
+fi
+
+# Invariant tests
+echo "🔬 Running invariant tests..."
+if ! forge test --match-path "test/*Invariant*" -vv; then
+    echo "❌ Invariant tests failed. Push aborted."
+    exit 1
+fi
+
+echo "✅ All pre-push checks passed!"

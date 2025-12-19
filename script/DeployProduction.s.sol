@@ -1,31 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
-import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
-import {Authority} from "superlib/auth/Auth.sol";
-import {ERC20} from "superlib/core/ERC20.sol";
 import {Roles} from "../src/roles/Roles.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {Authority} from "superlib/auth/Auth.sol";
+import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
+import {ERC20} from "superlib/core/ERC20.sol";
 
-import {FeeVault} from "../src/FeeVault.sol";
-import {MEVProtector} from "../src/MEVProtector.sol";
-import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
-import {MaximumSecurityEngine} from "../src/MaximumSecurityEngine.sol";
-import {RiskEngine} from "../src/RiskEngine.sol";
-import {StrategyOrchestrator} from "../src/StrategyOrchestrator.sol";
-import {QuantumArbitrage} from "../src/QuantumArbitrage.sol";
-import {UltimateArbitrageEngine} from "../src/UltimateArbitrageEngine.sol";
-import {ExecutionTrigger} from "../src/ExecutionTrigger.sol";
-import {MinimumCostExecutor} from "../src/MinimumCostExecutor.sol";
-import {StrategyAnalytics} from "../src/StrategyAnalytics.sol";
 import {ExecutionAnalytics} from "../src/ExecutionAnalytics.sol";
+import {ExecutionTrigger} from "../src/ExecutionTrigger.sol";
+import {FeeVault} from "../src/FeeVault.sol";
+import {FlashLoanEngine} from "../src/FlashLoanEngine.sol";
 import {IntelligenceProcessor} from "../src/IntelligenceProcessor.sol";
+import {MEVProtector} from "../src/MEVProtector.sol";
+import {MaximumSecurityEngine} from "../src/MaximumSecurityEngine.sol";
+import {MinimumCostExecutor} from "../src/MinimumCostExecutor.sol";
+import {QuantumArbitrage} from "../src/QuantumArbitrage.sol";
+import {RiskEngine} from "../src/RiskEngine.sol";
+import {StrategyAnalytics} from "../src/StrategyAnalytics.sol";
+import {StrategyOrchestrator} from "../src/StrategyOrchestrator.sol";
+import {UltimateArbitrageEngine} from "../src/UltimateArbitrageEngine.sol";
 
 /// @title DeployProduction
 /// @notice Production-grade deployment with complete role wiring per audit spec v1.1
 /// @dev Implements all P0/P1 fixes: vault separation, granular roles, guardian, whitelist elevation
 contract DeployProduction is Script {
+
     // Deployed contracts
     RolesAuthority public authority;
     FeeVault public feeVault;
@@ -96,7 +97,9 @@ contract DeployProduction is Script {
         });
     }
 
-    function _deployContracts(DeployConfig memory config) internal {
+    function _deployContracts(
+        DeployConfig memory config
+    ) internal {
         ERC20 asset = ERC20(config.assetToken);
 
         riskEngine = new RiskEngine(config.ownerMultisig, authority);
@@ -386,7 +389,9 @@ contract DeployProduction is Script {
         console.log("Wired 67 role capabilities");
     }
 
-    function _assignRoles(DeployConfig memory config) internal {
+    function _assignRoles(
+        DeployConfig memory config
+    ) internal {
         // ADMIN role for multisig
         authority.setUserRole(config.ownerMultisig, Roles.ADMIN, true);
         authority.setUserRole(config.ownerMultisig, Roles.WHITELIST_ADMIN, true);
@@ -406,7 +411,9 @@ contract DeployProduction is Script {
         }
     }
 
-    function _outputVerificationData(DeployConfig memory config) internal view {
+    function _outputVerificationData(
+        DeployConfig memory config
+    ) internal view {
         console.log("");
         console.log("=== Verification Commands ===");
         console.log("");
@@ -426,4 +433,5 @@ contract DeployProduction is Script {
         console.log("6. Test guardian pause functionality");
         console.log("7. Verify AI agent cannot withdraw from vault");
     }
+
 }

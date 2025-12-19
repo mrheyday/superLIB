@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ERC4626} from "superlib/core/ERC4626.sol";
+import {Auth, Authority} from "superlib/auth/Auth.sol";
 import {ERC20} from "superlib/core/ERC20.sol";
+import {ERC4626} from "superlib/core/ERC4626.sol";
+import {ReentrancyGuard} from "superlib/security/ReentrancyLib.sol";
 import {SafeTransferLib} from "superlib/transfer/SafeTransferLib.sol";
 import {MathLib} from "superlib/utils/MathLib.sol";
-import {Auth, Authority} from "superlib/auth/Auth.sol";
-import {ReentrancyGuard} from "superlib/security/ReentrancyLib.sol";
 
 /// @title FeeVault
 /// @notice ERC4626 tokenized vault with fee collection and rewards distribution
 /// @dev Uses Superlib Auth for role-based access, inflation attack protection via dead shares
 contract FeeVault is ERC4626, Auth, ReentrancyGuard {
+
     using SafeTransferLib for address;
     using MathLib for uint256;
 
@@ -105,7 +106,7 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     function initializeDeadShares() external requiresAuth {
         if (deadSharesInitialized) revert AlreadyInitialized();
         if (totalAssets() != 0) revert AlreadyInitialized();
-        
+
         deadSharesInitialized = true;
         address(asset).safeTransferFrom(msg.sender, address(this), MINIMUM_SHARES);
     }
@@ -258,7 +259,7 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     ) internal {
         // G-2: Short-circuit when rewards disabled and no supply
         if (rewardRate == 0 && totalSupply == 0) return;
-        
+
         rewardPerShareStored = rewardPerShare();
         lastRewardTime = block.timestamp;
         if (account != address(0)) {
@@ -337,4 +338,5 @@ contract FeeVault is ERC4626, Auth, ReentrancyGuard {
     function totalAssets() public view virtual override returns (uint256) {
         return SafeTransferLib.balanceOf(address(asset), address(this)) - rewardReserves;
     }
+
 }
