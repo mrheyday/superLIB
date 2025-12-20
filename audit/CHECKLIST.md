@@ -1,0 +1,5 @@
+- [ ] Nonce consumed before side-effects
+- [ ] DFA rejects malformed programs
+- [ ] Flash positions cleared after execution
+- [ ] Adapter authority boundaries
+- [ ] ASP registry poisoning resistance
