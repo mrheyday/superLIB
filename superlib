@@ -1,0 +1,33 @@
+lib/superlib
+├── Superlib.sol
+├── access
+│   └── AccessRolesLite.sol
+├── auth
+│   ├── Auth.sol
+│   └── RolesAuthority.sol
+├── core
+│   ├── ERC20.sol
+│   ├── ERC4626.sol
+│   ├── ERC6909Batch.sol
+│   ├── ERC6909Metadata.sol
+│   ├── ERC6909Permit.sol
+│   ├── ERC6909Strict.sol
+│   └── IERC6909URIResolver.sol
+├── deploy
+│   └── Create3Deployer.sol
+├── security
+│   ├── ECDSALib.sol
+│   ├── EIP712Strict.sol
+│   ├── ExecutionGuardLib.sol
+│   ├── Permit2Helpers.sol
+│   └── ReentrancyLib.sol
+├── transfer
+│   └── SafeTransferLib.sol
+└── utils
+    ├── BytesLib.sol
+    ├── LibBit.sol
+    ├── MathLib.sol
+    ├── OracleSafetyLib.sol
+    └── SignedWadLib.sol
+
+8 directories, 23 files

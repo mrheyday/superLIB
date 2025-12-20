@@ -1,0 +1,25 @@
+diff --git a/src/RolesAuthorityVerified.sol b/src/RolesAuthorityVerified.sol
+--- a/src/RolesAuthorityVerified.sol
++++ b/src/RolesAuthorityVerified.sol
+@@
+-        bytes32 preRoles = getUserRoles[user];
++        bytes32 preRoles = getUserRoles[user];
++        assert(preRoles == getUserRoles[user]);
+@@
+-        bytes32 preRoles = getUserRoles[msg.sender];
++        bytes32 preRoles = getUserRoles[msg.sender];
++        assert(preRoles == getUserRoles[msg.sender]);
+@@
+-        (bool success,) = target.call("");
++        (bool success,) = target.call("");
++        assert(success);
+
+diff --git a/src/UltimateArbitrageEngine.sol b/src/UltimateArbitrageEngine.sol
+--- a/src/UltimateArbitrageEngine.sol
++++ b/src/UltimateArbitrageEngine.sol
+@@
+-        address token,
++        address /* token */,
+@@
+-        address initiator,
++        address /* initiator */,

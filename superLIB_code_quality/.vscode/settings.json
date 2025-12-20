@@ -1,0 +1,61 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "JuanBlanco.solidity",
+  "editor.rulers": [120],
+  "editor.tabSize": 4,
+  "files.associations": {
+    "*.sol": "solidity"
+  },
+  "solidity.compileUsingRemoteVersion": "v0.8.28+commit.7893614a",
+  "solidity.defaultCompiler": "remote",
+  "solidity.formatter": "forge",
+  "solidity.linter": "solhint",
+  "solidity.solhintRules": null,
+  "solidity.enabledAsYouTypeCompilationErrorCheck": true,
+  "solidity.validationDelay": 1500,
+  "solidity.packageDefaultDependenciesContractsDirectory": "src",
+  "solidity.packageDefaultDependenciesDirectory": "lib",
+  "solidity.remappings": [
+    "forge-std/=lib/forge-std/src/",
+    "superlib/=lib/superlib/"
+  ],
+  "[solidity]": {
+    "editor.defaultFormatter": "JuanBlanco.solidity",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/out": true,
+    "**/cache": true,
+    "**/.git": true,
+    "**/coverage": true,
+    "**/crytic-export": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/lib": true,
+    "**/out": true,
+    "**/cache": true
+  },
+  "typescript.preferences.quoteStyle": "double",
+  "prettier.singleQuote": false,
+  "terminal.integrated.env.osx": {
+    "PATH": "${env:PATH}:${workspaceFolder}/node_modules/.bin"
+  },
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:PATH}:${workspaceFolder}/node_modules/.bin"
+  }
+}
