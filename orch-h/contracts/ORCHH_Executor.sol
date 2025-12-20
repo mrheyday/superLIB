@@ -1,20 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-/// @title ORCH-H Executor (Skeleton)
-/// @notice Verifies commitment and executes deterministic ORCH-H programs
+import "./adapters/IFlashLender.sol";
+
+/// @title ORCH-H Executor (Atomic Flash Engine)
+/// @notice Executes deterministic ORCH-H programs with flash liquidity
 contract ORCHH_Executor {
     error InvalidSignature();
     error NonceUsed();
+    error TooManyLenders();
+    error FlashNotRepaid();
     error InvalidProgram();
+
+    uint256 public constant MAX_LENDERS = 6;
 
     mapping(address => uint256) public nonces;
 
-    address public immutable aspRegistry;
-
-    constructor(address _aspRegistry) {
-        aspRegistry = _aspRegistry;
+    struct FlashPosition {
+        address lender;
+        address asset;
+        uint256 amount;
     }
+
+    FlashPosition[] internal positions;
 
     /// @notice Execute a committed ORCH-H program
     function execute(
@@ -26,14 +34,28 @@ contract ORCHH_Executor {
         if (nonces[msg.sender] != nonce) revert NonceUsed();
         nonces[msg.sender] = nonce + 1;
 
-        // 2. Verify signature (EIP-712 — implemented later)
-        // if (!verifySignature(...)) revert InvalidSignature();
+        // 2. Verify signature (implemented in Phase 2)
+        // 3. Parse program & enforce DFA (implemented later)
 
-        // 3. Parse + enforce DFA (implemented later)
+        // 4. Execute flash borrows (stub)
+        // positions.push(...)
 
-        // 4. Execute program atomically
+        // 5. Execute external calls (stub)
 
-        // NOTE: Skeleton only — no execution logic yet
+        // 6. Enforce assertions (stub)
+
+        // 7. Repay flash loans
+        for (uint256 i = 0; i < positions.length; i++) {
+            IFlashLender(positions[i].lender).flashRepay(
+                positions[i].asset,
+                positions[i].amount
+            );
+        }
+
+        // 8. Clear positions
+        delete positions;
+
+        // NOTE: Skeleton only — real logic added later
         revert InvalidProgram();
     }
 }
