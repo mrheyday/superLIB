@@ -1,0 +1,33 @@
+{
+  "extends": "solhint:recommended",
+  "rules": {
+    "code-complexity": ["error", 7],
+    "func-name-mixedcase": "error",
+    "func-visibility-first": "error",
+    "modifier-name-mixedcase": "error",
+    "var-name-mixedcase": "error",
+    "event-name-camelcase": "error",
+    "const-name-snakecase": "error",
+    "state-visibility-first": "error",
+    "immutable-vars-naming": [
+      "error",
+      {
+        "match": "^[A-Z][A-Z0-9_]*$"
+      }
+    ],
+    "named-parameters-mapping": "error",
+    "imports-on-top": "error",
+    "no-console": "error",
+    "no-empty-blocks": "error",
+    "no-unused-vars": "error",
+    "payable-no-empty-body": "error",
+    "max-line-length": ["error", 100],
+    "function-max-lines": ["error", 50],
+    "one-contract-per-file": "error",
+    "ordering": "error",
+    "quotes": ["error", "double"],
+    "semicolon-always": "error",
+    "visibility-modifier-order": "error",
+    "no-global-import": "off"
+  }
+}

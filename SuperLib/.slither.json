@@ -1,0 +1,25 @@
+{
+  "detectors": [
+    "reentrancy",
+    "unchecked-lowlevel",
+    "unchecked-send",
+    "uninitialized-state",
+    "uninitialized-local",
+    "constant-function-asm",
+    "tx-origin",
+    "type-inferred-from-typecast",
+    "calls-loop",
+    "assert-state-change",
+    "deprecated-standards",
+    "erc20-indexed",
+    "locked-ether",
+    "missing-zero-check",
+    "shadowing-state",
+    "shadowing-abstract",
+    "shadowing-builtin",
+    "shadowing-local"
+  ],
+  "exclude_optimization": false,
+  "exclude_informational": true,
+  "exclude_low": false
+}
