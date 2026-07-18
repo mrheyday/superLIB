@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.35;
 
 import {RolesAuthority} from "superlib/auth/RolesAuthority.sol";
 import {Authority} from "superlib/auth/Auth.sol";
