@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.35;
 
 import {ERC4626} from "superlib/core/ERC4626.sol";
 import {ERC20} from "superlib/core/ERC20.sol";
