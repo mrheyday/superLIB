@@ -4,7 +4,7 @@ pragma solidity ^0.8.35;
 import { LibTransient } from "solady/utils/LibTransient.sol";
 import { FixedPointMathLib } from "solady/utils/FixedPointMathLib.sol";
 import { LibBit } from "solady/utils/LibBit.sol";
-import { MulDivAssembly } from "./MulDivAssembly.sol";
+import { MulDivAssembly } from "../math/MulDivAssembly.sol";
 
 /// @title SafetyLib
 /// @notice Failsafe library using Osaka EVM transient storage (EIP-1153)
