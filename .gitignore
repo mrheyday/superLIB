@@ -338,3 +338,6 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
+.DS_Store
+*.zip
+.claude/worktrees/
