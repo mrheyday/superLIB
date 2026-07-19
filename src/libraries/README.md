@@ -15,7 +15,6 @@ Layout: one folder per category, sorted alphabetically within.
 |---|---|
 | `BitMath` | Bit-manipulation helpers (most/least-significant bit, masks). |
 | `CLZAdapter` | Count-leading-zeros over Solady `LibBit` (`clz` opcode + fallback). |
-| `MulDivAssembly` | Full-precision `mulDiv` in assembly. |
 
 ## crypto
 | Library | Purpose |
@@ -28,7 +27,6 @@ Layout: one folder per category, sorted alphabetically within.
 |---|---|
 | `BeaconRootLib` | Beacon block-root reads (EIP-4788). |
 | `BlobGasLib` | Blob base-fee / blob-gas helpers (EIP-4844). |
-| `BlockHashLib` | Historical block-hash access. |
 
 ## transient
 | Library | Purpose |
@@ -39,7 +37,6 @@ Layout: one folder per category, sorted alphabetically within.
 ## deploy
 | Library | Purpose |
 |---|---|
-| `CREATE3` | Deterministic `CREATE3` deployment. |
 | `HookCreate2` | `CREATE2` address derivation/mining for hooks. |
 | `UniversalDeployment` | Deterministic universal deployment helper. |
 
@@ -73,7 +70,7 @@ Co-dependent cluster (kept together): `FrontrunCalldata`, `ReserveShapeAdmission
 |---|---|
 | `AccessListHelper` | EIP-2930 access-list construction. |
 | `BytecodeAnalyzer` | On-chain bytecode analysis. |
-| `SafetyLib` | Safety/guard helpers (transient, `MulDivAssembly`, `LibBit`). |
+| `SafetyLib` | Safety/guard helpers (transient, `LibBit`). |
 | `SingletonArrays` | Single-element array constructors. |
 
 ---
@@ -81,5 +78,11 @@ Co-dependent cluster (kept together): `FrontrunCalldata`, `ReserveShapeAdmission
 ### Deferred (not yet imported)
 - `LiquidityAmounts` — needs `@uniswap/v4-core`.
 - Executor-coupled set (`LibExecutorCore`, `LibExecutorAuth`, `LibExecutorPause`, `LibLiquidation`) — need mev-arbitrum's `interfaces/` + `executors/diamond/LibExecutorStorage`.
+
+### Removed as duplicates of vendored dependencies
+Per the "does OZ or Solady already do this?" bar: use the dependency directly instead.
+- `CREATE3` — use `solady/utils/CREATE3.sol` (this was a verbatim copy).
+- `BlockHashLib` — use `@openzeppelin/contracts/utils/Blockhash.sol` (identical EIP-2935 logic).
+- `MulDivAssembly` — use `solady/utils/FixedPointMathLib.sol`'s `fullMulDiv` (the library's EIP-5000 opcode path was never wired up; it always ran the Solady-equivalent fallback).
 
 Licensed under [MIT](../../LICENSE).

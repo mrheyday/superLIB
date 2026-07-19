@@ -4,7 +4,6 @@ pragma solidity ^0.8.35;
 import { LibTransient } from "solady/utils/LibTransient.sol";
 import { FixedPointMathLib } from "solady/utils/FixedPointMathLib.sol";
 import { LibBit } from "solady/utils/LibBit.sol";
-import { MulDivAssembly } from "../math/MulDivAssembly.sol";
 
 /// @title SafetyLib
 /// @notice Failsafe library using Osaka EVM transient storage (EIP-1153)
@@ -231,15 +230,13 @@ library SafetyLib {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //                    COINBASE TIP (EIP-5000 MULDIV-ready)
+    //                          COINBASE TIP
     // ═══════════════════════════════════════════════════════════════
 
-    /// @notice Tip coinbase using MULDIV-ready math (EIP-5000)
-    /// @dev When EIP-5000 is live, MulDivAssembly uses opcode 0x1e (8 gas)
-    ///      instead of Solady's mulDiv (~38 gas), saving ~30 gas per tip calculation.
+    /// @notice Tip coinbase a share of profit.
     function tipCoinbase(uint256 profit, uint16 tipBps) internal returns (uint256 tipPaid) {
         if (tipBps == 0 || tipBps > 10_000) return 0;
-        tipPaid = MulDivAssembly.mulDiv(profit, tipBps, 10_000);
+        tipPaid = FixedPointMathLib.fullMulDiv(profit, tipBps, 10_000);
         if (tipPaid > 0) {
             assembly ("memory-safe") {
                 if iszero(call(gas(), coinbase(), tipPaid, 0, 0, 0, 0)) {
