@@ -1,9 +1,12 @@
 # superLIB libraries
 
-A curated, gas-optimized Solidity library collection (Solady-style), gathered
-from the mev-arbitrum and MEV-PARADISE workspaces. All libraries are
-`SPDX MIT`, `pragma solidity ^0.8.35`, and compile against
-`evm_version = "osaka"` (some use the `clz` opcode and transient storage).
+A complementary Solidity library collection (Solady-style): gas-optimized
+helpers for primitives that OpenZeppelin and Solady don't cover — recent EIPs
+(beacon roots, blob gas, RIP-7212 P256, BLS12-381), MEV-specific utilities,
+and osaka-target bit/math helpers — gathered from the mev-arbitrum and
+MEV-PARADISE workspaces. All libraries are `SPDX MIT`,
+`pragma solidity ^0.8.35`, and compile against `evm_version = "osaka"` (some
+use the `clz` opcode and transient storage).
 
 Layout: one folder per category, sorted alphabetically within.
 
