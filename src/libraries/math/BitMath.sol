@@ -291,6 +291,42 @@ library BitMath {
         }
     }
 
+    /// @notice Returns the smallest power of two that is >= x.
+    /// @dev `nextPowerOf2(0) == 1`.
+    function nextPowerOf2(
+        uint256 x
+    ) internal pure returns (uint256 next) {
+        if (x == 0) return 1;
+        if (x & (x - 1) == 0) return x; // already a power of two
+        return uint256(1) << (mostSignificantBit(x) + 1);
+    }
+
+    /// @notice Returns the indices of the top `n` set bits in `bitmap`, highest first.
+    /// @dev Returns fewer than `n` entries (array is shrunk) if `bitmap` has fewer set bits.
+    function findTopNBits(
+        uint256 bitmap,
+        uint256 n
+    ) internal pure returns (uint256[] memory bits) {
+        bits = new uint256[](n);
+        uint256 remaining = bitmap;
+        uint256 count;
+
+        while (count < n && remaining != 0) {
+            uint256 top = mostSignificantBit(remaining);
+            bits[count] = top;
+            remaining &= ~(uint256(1) << top);
+            unchecked {
+                ++count;
+            }
+        }
+
+        if (count < n) {
+            assembly ("memory-safe") {
+                mstore(bits, count)
+            }
+        }
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*       PRIVATE PRIMITIVES (inlined from Solady LibBit)      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/

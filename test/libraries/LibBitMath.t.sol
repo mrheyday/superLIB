@@ -4,9 +4,8 @@ pragma solidity ^0.8.35;
 import {Test} from "forge-std/Test.sol";
 
 import {BitMath} from "../../src/libraries/math/BitMath.sol";
-import {CLZAdapter} from "../../src/libraries/math/CLZAdapter.sol";
 
-/// @dev BitMath/CLZAdapter are `internal`; drive them through an external harness.
+/// @dev BitMath is `internal`; drive it through an external harness.
 contract BitHarness {
     function msb(uint256 x) external pure returns (uint8) {
         return BitMath.mostSignificantBit(x);
@@ -24,20 +23,16 @@ contract BitHarness {
         return BitMath.popCount(x);
     }
 
-    function log2(uint256 x) external pure returns (uint256) {
-        return CLZAdapter.log2(x);
-    }
-
-    function isPow2(uint256 x) external pure returns (bool) {
-        return CLZAdapter.isPowerOf2(x);
-    }
-
     function nextPow2(uint256 x) external pure returns (uint256) {
-        return CLZAdapter.nextPowerOf2(x);
+        return BitMath.nextPowerOf2(x);
+    }
+
+    function topNBits(uint256 bitmap, uint256 n) external pure returns (uint256[] memory) {
+        return BitMath.findTopNBits(bitmap, n);
     }
 }
 
-/// @notice Test-drive of the LibBit-backed bit-math (Solady LibBit via BitMath/CLZAdapter,
+/// @notice Test-drive of the LibBit-backed bit-math (Solady LibBit via BitMath,
 ///         EIP-7939 `clz` on the osaka target).
 contract LibBitMathTest is Test {
     BitHarness h;
@@ -86,27 +81,26 @@ contract LibBitMathTest is Test {
         assertEq(uint256(h.msb(x)), 255 - h.clz(x));
     }
 
-    /* ------------------------------ CLZAdapter ------------------------------ */
-
-    function test_Log2_KnownValues() public view {
-        assertEq(h.log2(1), 0);
-        assertEq(h.log2(2), 1);
-        assertEq(h.log2(255), 7);
-        assertEq(h.log2(256), 8);
-    }
-
-    function test_IsPowerOf2_KnownValues() public view {
-        assertTrue(h.isPow2(1));
-        assertTrue(h.isPow2(8));
-        assertTrue(h.isPow2(uint256(1) << 128));
-        assertFalse(h.isPow2(7));
-        assertFalse(h.isPow2(0));
-    }
-
     function test_NextPowerOf2_KnownValues() public view {
         assertEq(h.nextPow2(5), 8);
         assertEq(h.nextPow2(8), 8); // already a power of two
         assertEq(h.nextPow2(1), 1);
         assertEq(h.nextPow2(129), 256);
+        assertEq(h.nextPow2(0), 1);
+    }
+
+    function test_FindTopNBits_HighestFirst() public view {
+        // 0b1011 = bits {0, 1, 3} set; top 2 highest-first -> [3, 1]
+        uint256[] memory top = h.topNBits(0xB, 2);
+        assertEq(top.length, 2);
+        assertEq(top[0], 3);
+        assertEq(top[1], 1);
+    }
+
+    function test_FindTopNBits_ShrinksWhenFewerSetBits() public view {
+        // only 1 bit set, but 3 requested -> array shrinks to length 1
+        uint256[] memory top = h.topNBits(0x10, 3);
+        assertEq(top.length, 1);
+        assertEq(top[0], 4);
     }
 }

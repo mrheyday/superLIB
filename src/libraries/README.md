@@ -13,14 +13,13 @@ Layout: one folder per category, sorted alphabetically within.
 ## math
 | Library | Purpose |
 |---|---|
-| `BitMath` | Bit-manipulation helpers (most/least-significant bit, masks). |
-| `CLZAdapter` | Count-leading-zeros over Solady `LibBit` (`clz` opcode + fallback). |
+| `BitMath` | Bit-manipulation helpers (most/least-significant bit, masks, next-power-of-2, top-N bits). |
 
 ## crypto
 | Library | Purpose |
 |---|---|
-| `BLSLib` | BLS12-381 precompile helpers. |
-| `P256Precompile` | secp256r1 (RIP-7212 / P256) verification via precompile, Solady `P256` fallback. |
+| `BLSLib` | BLS12-381 calldata-native pairing verification ("dumb contract, smart Rust"). |
+| `P256Precompile` | secp256r1 (EIP-7951 P256VERIFY) utilities: cached availability, curve/range checks, raw verify. |
 
 ## evm
 | Library | Purpose |
@@ -37,14 +36,13 @@ Layout: one folder per category, sorted alphabetically within.
 ## deploy
 | Library | Purpose |
 |---|---|
-| `HookCreate2` | `CREATE2` address derivation/mining for hooks. |
+| `HookCreate2` | `CREATE2` deploy for mined Uniswap v4 hook addresses (bubbles up constructor revert data). |
 | `UniversalDeployment` | Deterministic universal deployment helper. |
 
 ## tokens
 | Library | Purpose |
 |---|---|
 | `LpTransferLib` | LP-token transfer helpers (Solady `SafeTransferLib`). |
-| `TokenRiskFilter` | Token risk / blacklist filtering. |
 | `TokenStandardIds` | Token-standard (ERC-20/721/1155/…) detection. |
 
 ## dex
@@ -69,7 +67,8 @@ Co-dependent cluster (kept together): `FrontrunCalldata`, `ReserveShapeAdmission
 | Library | Purpose |
 |---|---|
 | `AccessListHelper` | EIP-2930 access-list construction. |
-| `BytecodeAnalyzer` | On-chain bytecode analysis. |
+| `ASN1SMTCodec` | ASN.1/DER wire-format mapping + SMT-LIB2 constraint strings (off-chain interop). |
+| `BytecodeAnalyzer` | On-chain bytecode/opcode introspection + ABI selector codec. |
 | `SafetyLib` | Safety/guard helpers (transient, `LibBit`). |
 | `SingletonArrays` | Single-element array constructors. |
 
@@ -84,5 +83,14 @@ Per the "does OZ or Solady already do this?" bar: use the dependency directly in
 - `CREATE3` — use `solady/utils/CREATE3.sol` (this was a verbatim copy).
 - `BlockHashLib` — use `@openzeppelin/contracts/utils/Blockhash.sol` (identical EIP-2935 logic).
 - `MulDivAssembly` — use `solady/utils/FixedPointMathLib.sol`'s `fullMulDiv` (the library's EIP-5000 opcode path was never wired up; it always ran the Solady-equivalent fallback).
+- `CLZAdapter` — folded its two novel functions (`nextPowerOf2`, `findTopNBits`) into `BitMath`; the rest duplicated both `BitMath` (in-repo) and Solady `LibBit` (external) with no unique value.
+
+### Trimmed (kept the value-add, dropped the duplicate part)
+- `P256Precompile` — removed `verifySignature`/`verifyNative` (re-implemented Solady `P256.verifySignature`'s own precompile-then-fallback path); kept the cached-availability/curve/range utilities Solady doesn't expose. For automatic verify-with-fallback, call Solady's `P256.verifySignature` directly.
+- `BLSLib` — removed `g1Add`/`g2Add` (duplicated Solady `BLS.add`, zero callers); kept the calldata-native pairing verification, which Solady's struct-based API doesn't provide.
+- `HookCreate2` — removed `predict()` (verbatim duplicate of OZ's `Create2.computeAddress`); kept `deploy()`, whose revert-data bubbling is the real value-add over OZ's `Create2.deploy`.
+
+### Relocated (structural, not a duplication issue)
+- `TokenRiskFilter` moved to `src/TokenRiskFilter.sol` — it's a stateful `contract` (has a constructor), not a `library`, so it belongs alongside the other deployable engine contracts in `src/`, not in this tree.
 
 Licensed under [MIT](../../LICENSE).

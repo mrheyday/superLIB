@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.35;
 
-import { P256 as SoladyP256 } from "solady/utils/P256.sol";
-
 /// @title P256Precompile
-/// @notice EIP-7951 P256VERIFY precompile adapter with Solady fallback
+/// @notice EIP-7951 P256VERIFY precompile utilities: cached availability detection,
+///         curve/range validation, and raw-bytes verification.
+/// @dev For "verify with automatic native-precompile + fallback" semantics, call
+///      Solady's `P256.verifySignature` (solady/utils/P256.sol) directly — it already
+///      implements that path, so this library does not re-wrap it.
 /// @dev Native secp256r1 (P-256) signature verification at address 0x100
 /// @dev Osaka EVM: 6,900 gas vs ~100,000+ gas for pure Solidity
 ///
@@ -109,114 +111,14 @@ library P256Precompile {
     }
 
     // ============== Verification ==============
-
-    /// @notice Verify P-256 signature using native precompile
-    /// @dev Falls back to Solady if precompile unavailable
-    /// @param hash Message hash (32 bytes)
-    /// @param r Signature r component (32 bytes)
-    /// @param s Signature s component (32 bytes)
-    /// @param qx Public key x coordinate (32 bytes)
-    /// @param qy Public key y coordinate (32 bytes)
-    /// @return valid True if signature is valid
-    function verifySignature(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s,
-        bytes32 qx,
-        bytes32 qy
-    )
-        internal
-        returns (bool valid)
-    {
-        // Try native precompile first
-        if (isPrecompileAvailable()) {
-            return _verifyNative(hash, r, s, qx, qy);
-        }
-
-        // Fallback to Solady P256 library
-        return _verifySolady(hash, r, s, qx, qy);
-    }
-
-    /// @notice Verify using native P256VERIFY precompile (EIP-7951)
-    /// @dev Gas cost: 6,900 fixed
-    /// @param hash Message hash
-    /// @param r Signature r
-    /// @param s Signature s
-    /// @param qx Public key x
-    /// @param qy Public key y
-    /// @return valid True if valid
-    function _verifyNative(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s,
-        bytes32 qx,
-        bytes32 qy
-    )
-        private
-        view
-        returns (bool valid)
-    {
-        // Input validation per EIP-7951
-        // r and s must be in (0, n)
-        if (uint256(r) == 0 || uint256(r) >= N) return false;
-        if (uint256(s) == 0 || uint256(s) >= N) return false;
-
-        // qx and qy must be in [0, p)
-        if (uint256(qx) >= P) return false;
-        if (uint256(qy) >= P) return false;
-
-        // Call precompile: input is exactly 160 bytes
-        // [hash(32)][r(32)][s(32)][qx(32)][qy(32)]
-        (bool success, bytes memory result) =
-            P256_VERIFY.staticcall(abi.encodePacked(hash, r, s, qx, qy));
-
-        // Success with 32-byte result containing 1 = valid signature
-        // Empty result or 0 = invalid signature
-        if (!success || result.length != 32) return false;
-
-        return uint256(bytes32(result)) == 1;
-    }
-
-    /// @notice Verify using Solady P256 library (fallback)
-    /// @dev Gas cost: ~100,000+ (pure Solidity implementation via RIP-7212 verifier)
-    function _verifySolady(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s,
-        bytes32 qx,
-        bytes32 qy
-    )
-        private
-        view
-        returns (bool valid)
-    {
-        // Use Solady's P256 library directly (handles RIP-7212 precompile + verifier fallback)
-        return SoladyP256.verifySignature(hash, r, s, qx, qy);
-    }
-
-    // ============== Direct Precompile Access ==============
-
-    /// @notice Direct call to P256VERIFY precompile (no fallback)
-    /// @dev Use this when you know precompile is available
-    /// @param hash Message hash
-    /// @param r Signature r
-    /// @param s Signature s
-    /// @param qx Public key x
-    /// @param qy Public key y
-    /// @return valid True if valid
-    function verifyNative(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s,
-        bytes32 qx,
-        bytes32 qy
-    )
-        internal
-        view
-        returns (bool valid)
-    {
-        return _verifyNative(hash, r, s, qx, qy);
-    }
+    //
+    // NOTE: for "verify with automatic native-precompile + fallback" semantics,
+    // import and call `solady/utils/P256.sol`'s `verifySignature` directly — it
+    // already implements that exact precompile-then-fallback path, so re-wrapping
+    // it here would just re-run the same probe and range checks a second time.
+    // This library's value-add is the utilities below (cached availability
+    // check, curve/range validation, raw-bytes verify) that Solady's P256
+    // does not expose.
 
     /// @notice Verify with raw bytes input (160 bytes expected)
     /// @param input Packed input: hash || r || s || qx || qy
