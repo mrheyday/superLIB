@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.35;
 
-import { MegaMEVOptimizationLib } from "./MegaMEVOptimizationLib.sol";
+import { FixedPointMathLib } from "solady/utils/FixedPointMathLib.sol";
 import { ReserveShapeAdmission } from "./ReserveShapeAdmission.sol";
 
 /// @title  FrontrunCalldata — encoders + decoders for the frontrun decoder targets
@@ -557,7 +557,7 @@ library FrontrunCalldata {
         uint256 n = commands.length;
         // If commands and inputs lengths disagree, surface as truncated steps
         // — UR itself would revert at dispatch, but we let the caller decide.
-        uint256 outLen = MegaMEVOptimizationLib.min(n, inputs.length);
+        uint256 outLen = FixedPointMathLib.min(n, inputs.length);
         steps = new URCommandStep[](outLen);
         for (uint256 i = 0; i < outLen; ++i) {
             bytes1 raw = commands[i];
@@ -745,7 +745,7 @@ library FrontrunCalldata {
         //
         // If outV_baseline ≤ Mv, no slack to capture — return 0.
         {
-            uint256 baselineOut = MegaMEVOptimizationLib.mulDiv(
+            uint256 baselineOut = FixedPointMathLib.fullMulDiv(
                 victimAmountIn * gBps, reserveOut, reserveIn * 10_000 + victimAmountIn * gBps
             );
             // Note `victimAmountIn * gBps` cannot overflow under the envelope
@@ -863,8 +863,8 @@ library FrontrunCalldata {
             // Correct path: under envelope Av ≤ 2^96 and R0 ≤ 2^128 so
             // `Av·R0` fits in uint256 (≤ 2^224). Then `fullMulDiv(Av·R0, R1, Mv)`
             // computes the final result with the necessary 512-bit intermediate.
-            c1Pos = MegaMEVOptimizationLib.mulDiv(reserveIn, innerFirst, gBps);
-            c1Neg = MegaMEVOptimizationLib.mulDiv(victimAmountIn * reserveIn, reserveOut, victimMinOut);
+            c1Pos = FixedPointMathLib.fullMulDiv(reserveIn, innerFirst, gBps);
+            c1Neg = FixedPointMathLib.fullMulDiv(victimAmountIn * reserveIn, reserveOut, victimMinOut);
             // Defense-in-depth: profitability gate above implies c1Neg > c1Pos.
             // If the gate's integer rounding admits a slim edge case where
             // c1Neg ≤ c1Pos, fall through to 0.
@@ -877,7 +877,7 @@ library FrontrunCalldata {
         // Each summand fits in uint256 comfortably under the envelope.
         uint256 b1OverA1;
         {
-            uint256 lhs = MegaMEVOptimizationLib.mulDiv(reserveIn, 10_000 + gBps, gBps);
+            uint256 lhs = FixedPointMathLib.fullMulDiv(reserveIn, 10_000 + gBps, gBps);
             uint256 rhs = (gBps * victimAmountIn) / 10_000;
             b1OverA1 = lhs + rhs;
         }
@@ -922,14 +922,14 @@ library FrontrunCalldata {
             // (halfB)² + |C|. If halfB > sqrt(uint256.max / 2), squaring
             // overflows. sqrt(uint256.max) ≈ 2^128. We use Solady's mulDiv
             // which reverts on overflow.
-            uint256 halfBsq = MegaMEVOptimizationLib.mulDiv(halfB, halfB, 1);
+            uint256 halfBsq = FixedPointMathLib.fullMulDiv(halfB, halfB, 1);
             disc = halfBsq + absC1OverA1;
             // saturating-add: if absC1OverA1 forces overflow we degrade to 0.
             // (Solady has saturatingAdd; here we check explicitly.)
             if (disc < halfBsq) return 0;
         }
 
-        uint256 sqrtDisc = MegaMEVOptimizationLib.sqrt(disc);
+        uint256 sqrtDisc = FixedPointMathLib.sqrt(disc);
         // a = −b1OverA1/2 + sqrtDisc. Since the sandwich is profitable
         // (gate above) sqrtDisc > b1OverA1/2 strictly; assert and subtract.
         uint256 halfB1OverA1 = b1OverA1 / 2;
@@ -999,8 +999,8 @@ library FrontrunCalldata {
         // R1_virt (token1) = L · sqrtPriceX96 / 2^96
         //
         // Under envelope L ≤ 2^128, sqrtPriceX96 ≤ 2^160. Use fullMulDiv.
-        uint256 r0Virt = MegaMEVOptimizationLib.mulDiv(uint256(liquidity), 1 << 96, uint256(sqrtPriceX96));
-        uint256 r1Virt = MegaMEVOptimizationLib.mulDiv(uint256(liquidity), uint256(sqrtPriceX96), 1 << 96);
+        uint256 r0Virt = FixedPointMathLib.fullMulDiv(uint256(liquidity), 1 << 96, uint256(sqrtPriceX96));
+        uint256 r1Virt = FixedPointMathLib.fullMulDiv(uint256(liquidity), uint256(sqrtPriceX96), 1 << 96);
 
         // Pick (reserveIn, reserveOut) from the swap direction.
         (uint256 reserveIn, uint256 reserveOut) = zeroForOne ? (r0Virt, r1Virt) : (r1Virt, r0Virt);

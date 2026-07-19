@@ -53,14 +53,12 @@ Layout: one folder per category, sorted alphabetically within.
 | `RouterRegistry` | DEX router registry / dispatch table. |
 
 ## mev
-Co-dependent cluster (kept together): `FrontrunCalldata`, `ReserveShapeAdmission`, and `StepMerging` build on `MegaMEVOptimizationLib`.
-
 | Library | Purpose |
 |---|---|
-| `FrontrunCalldata` | Frontrun calldata construction/analysis. |
-| `MegaMEVOptimizationLib` | MEV optimization primitives (shared by the cluster). |
-| `ReserveShapeAdmission` | Reserve-shape admission checks. |
-| `StepMerging` | Swap-step merging/optimization. |
+| `FrontrunCalldata` | Frontrun calldata construction/analysis (generic math via Solady `FixedPointMathLib`). |
+| `MEVReserveMath` | Reserve-shape heuristics (magnitude bucket, imbalance score, admission gate) — used by `ReserveShapeAdmission`. Built on Solady `FixedPointMathLib` + `BitMath` directly. |
+| `ReserveShapeAdmission` | Reserve-shape admission checks (built on `MEVReserveMath`). |
+| `StepMerging` | Swap-step merging/optimization (generic math via Solady `FixedPointMathLib`). |
 | `TrustedFillerPolicy` | Trusted-filler policy checks. |
 
 ## utils
@@ -89,6 +87,7 @@ Per the "does OZ or Solady already do this?" bar: use the dependency directly in
 - `P256Precompile` — removed `verifySignature`/`verifyNative` (re-implemented Solady `P256.verifySignature`'s own precompile-then-fallback path); kept the cached-availability/curve/range utilities Solady doesn't expose. For automatic verify-with-fallback, call Solady's `P256.verifySignature` directly.
 - `BLSLib` — removed `g1Add`/`g2Add` (duplicated Solady `BLS.add`, zero callers); kept the calldata-native pairing verification, which Solady's struct-based API doesn't provide.
 - `HookCreate2` — removed `predict()` (verbatim duplicate of OZ's `Create2.computeAddress`); kept `deploy()`, whose revert-data bubbling is the real value-add over OZ's `Create2.deploy`.
+- `MegaMEVOptimizationLib` — deleted. Of ~60 functions only 8 had any caller anywhere in the repo: 4 generic-math (`min`, `max`, `mulDiv`, `sqrt` — all Solady `FixedPointMathLib` duplicates) and 4 genuinely MEV-specific (`magnitudeBucket`, `reserveImbalanceBucket`, `rejectByReserveShape`, `liquidityClass`). Repointed `FrontrunCalldata`/`StepMerging` to call Solady's `FixedPointMathLib` directly, and extracted the 4 MEV-specific functions into `mev/MEVReserveMath.sol` (built on Solady `FixedPointMathLib` + `BitMath`), consumed by `ReserveShapeAdmission`.
 
 ### Relocated (structural, not a duplication issue)
 - `TokenRiskFilter` moved to `src/TokenRiskFilter.sol` — it's a stateful `contract` (has a constructor), not a `library`, so it belongs alongside the other deployable engine contracts in `src/`, not in this tree.

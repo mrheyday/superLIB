@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.35;
 
-import { MegaMEVOptimizationLib } from "./MegaMEVOptimizationLib.sol";
+import { FixedPointMathLib } from "solady/utils/FixedPointMathLib.sol";
 
 /// @title  StepMerging
 /// @notice 1inch Pathfinder–style step-merging primitive in pure Solidity.
@@ -149,10 +149,10 @@ library StepMerging {
         if (poolLiquidity == 0) return 0;
 
         uint256 denominator = poolLiquidity + amountIn;
-        uint256 impactFactor = MegaMEVOptimizationLib.mulDiv(amountIn, SCALE, denominator); // [0, SCALE]
+        uint256 impactFactor = FixedPointMathLib.fullMulDiv(amountIn, SCALE, denominator); // [0, SCALE]
 
         uint256 feePart = (FEE_BPS * SCALE) / 10_000;
-        uint256 impactPart = MegaMEVOptimizationLib.mulDiv(impactFactor, IMPACT_EXPONENT, 100);
+        uint256 impactPart = FixedPointMathLib.fullMulDiv(impactFactor, IMPACT_EXPONENT, 100);
 
         unchecked {
             uint256 effectiveRate;
@@ -162,7 +162,7 @@ library StepMerging {
                 effectiveRate = 0;
             }
             uint256 floorRate = SCALE / MIN_EFFECTIVE_RATE_FRACTION;
-            return MegaMEVOptimizationLib.max(effectiveRate, floorRate);
+            return FixedPointMathLib.max(effectiveRate, floorRate);
         }
     }
 
