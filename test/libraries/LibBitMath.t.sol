@@ -89,6 +89,23 @@ contract LibBitMathTest is Test {
         assertEq(h.nextPow2(0), 1);
     }
 
+    /// @dev x == 2**255 is already a power of two -> returns itself, no overflow.
+    function test_NextPowerOf2_BoundaryPowerOfTwoDoesNotRevert() public view {
+        assertEq(h.nextPow2(uint256(1) << 255), uint256(1) << 255);
+    }
+
+    /// @dev x > 2**255 and not itself a power of two -> true result (2**256)
+    ///      doesn't fit in a uint256; must revert rather than silently wrap to 0.
+    function test_NextPowerOf2_RevertsOnOverflow() public {
+        vm.expectRevert(BitMath.BitMath__NextPowerOf2Overflow.selector);
+        h.nextPow2((uint256(1) << 255) + 1);
+    }
+
+    function test_NextPowerOf2_RevertsOnOverflow_MaxUint() public {
+        vm.expectRevert(BitMath.BitMath__NextPowerOf2Overflow.selector);
+        h.nextPow2(type(uint256).max);
+    }
+
     function test_FindTopNBits_HighestFirst() public view {
         // 0b1011 = bits {0, 1, 3} set; top 2 highest-first -> [3, 1]
         uint256[] memory top = h.topNBits(0xB, 2);
