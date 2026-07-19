@@ -34,20 +34,8 @@ library HookCreate2 {
         }
     }
 
-    /// @notice Predict a CREATE2 address for this deployer.
-    function predict(
-        bytes32 initCodeHash,
-        bytes32 salt
-    ) internal view returns (address predicted) {
-        return predict(address(this), initCodeHash, salt);
-    }
-
-    /// @notice Predict a CREATE2 address for an arbitrary deployer.
-    function predict(
-        address deployer,
-        bytes32 initCodeHash,
-        bytes32 salt
-    ) internal pure returns (address predicted) {
-        predicted = address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), deployer, salt, initCodeHash)))));
-    }
+    // NOTE: for CREATE2 address prediction, use OpenZeppelin's
+    // `Create2.computeAddress(salt, bytecodeHash[, deployer])`
+    // (@openzeppelin/contracts/utils/Create2.sol) — it implements the identical
+    // formula, so this library does not re-wrap it.
 }

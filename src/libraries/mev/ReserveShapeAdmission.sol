@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.35;
 
-import { MegaMEVOptimizationLib } from "./MegaMEVOptimizationLib.sol";
+import { MEVReserveMath } from "./MEVReserveMath.sol";
 
 /// @title  ReserveShapeAdmission
 /// @author mev-arbitrum
-/// @notice Composes the MegaMEVOptimizationLib reserve-shape heuristics into a
+/// @notice Composes the MEVReserveMath reserve-shape heuristics into a
 ///         single admission gate for candidate AMM pools.
 /// @dev    A cheap CLZ-backed pre-filter — NOT a price model. It screens out
 ///         pools that are not worth quoting or attacking: dust reserves (too
@@ -73,13 +73,13 @@ library ReserveShapeAdmission {
         if (reserveA == 0 || reserveB == 0) return false;
         // `rejectByReserveShape` folds in the per-reserve bit-length floor and
         // the imbalance ceiling.
-        if (MegaMEVOptimizationLib.rejectByReserveShape(
+        if (MEVReserveMath.rejectByReserveShape(
                 reserveA, reserveB, t.minReserveBitLength, t.maxImbalanceBucket
             )) {
             return false;
         }
         // Additional depth floor on the shallow side.
-        if (MegaMEVOptimizationLib.liquidityClass(reserveA, reserveB) < t.minLiquidityClass) {
+        if (MEVReserveMath.liquidityClass(reserveA, reserveB) < t.minLiquidityClass) {
             return false;
         }
         return true;
@@ -96,9 +96,9 @@ library ReserveShapeAdmission {
         uint256 reserveA,
         uint256 reserveB
     ) internal pure returns (uint256 imbalanceBucket, uint256 liquidityClass, uint256 magnitudeA, uint256 magnitudeB) {
-        imbalanceBucket = MegaMEVOptimizationLib.reserveImbalanceBucket(reserveA, reserveB);
-        liquidityClass = MegaMEVOptimizationLib.liquidityClass(reserveA, reserveB);
-        magnitudeA = MegaMEVOptimizationLib.magnitudeBucket(reserveA);
-        magnitudeB = MegaMEVOptimizationLib.magnitudeBucket(reserveB);
+        imbalanceBucket = MEVReserveMath.reserveImbalanceBucket(reserveA, reserveB);
+        liquidityClass = MEVReserveMath.liquidityClass(reserveA, reserveB);
+        magnitudeA = MEVReserveMath.magnitudeBucket(reserveA);
+        magnitudeB = MEVReserveMath.magnitudeBucket(reserveB);
     }
 }

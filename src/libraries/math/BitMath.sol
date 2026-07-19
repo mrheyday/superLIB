@@ -12,6 +12,9 @@ library BitMath {
     /// @notice Zero is not a valid input for `mostSignificantBit`.
     error BitMath__ZeroInput();
 
+    /// @notice The result of `nextPowerOf2` would exceed the uint256 range.
+    error BitMath__NextPowerOf2Overflow();
+
     /// @notice Returns the index of the most significant bit of x.
     /// @param x The value to scan.
     /// @return r The index of the MSB (0-255).
@@ -287,6 +290,46 @@ library BitMath {
             results[i] = leadingZerosUint64(inputs[i]);
             unchecked {
                 ++i;
+            }
+        }
+    }
+
+    /// @notice Returns the smallest power of two that is >= x.
+    /// @dev `nextPowerOf2(0) == 1`. Reverts with `BitMath__NextPowerOf2Overflow`
+    ///      if x > 2**255 and x is not itself a power of two (the true result
+    ///      would be 2**256, which does not fit in a uint256).
+    function nextPowerOf2(
+        uint256 x
+    ) internal pure returns (uint256 next) {
+        if (x == 0) return 1;
+        if (x & (x - 1) == 0) return x; // already a power of two
+        uint256 msb = mostSignificantBit(x);
+        if (msb == 255) revert BitMath__NextPowerOf2Overflow();
+        return uint256(1) << (msb + 1);
+    }
+
+    /// @notice Returns the indices of the top `n` set bits in `bitmap`, highest first.
+    /// @dev Returns fewer than `n` entries (array is shrunk) if `bitmap` has fewer set bits.
+    function findTopNBits(
+        uint256 bitmap,
+        uint256 n
+    ) internal pure returns (uint256[] memory bits) {
+        bits = new uint256[](n);
+        uint256 remaining = bitmap;
+        uint256 count;
+
+        while (count < n && remaining != 0) {
+            uint256 top = mostSignificantBit(remaining);
+            bits[count] = top;
+            remaining &= ~(uint256(1) << top);
+            unchecked {
+                ++count;
+            }
+        }
+
+        if (count < n) {
+            assembly ("memory-safe") {
+                mstore(bits, count)
             }
         }
     }

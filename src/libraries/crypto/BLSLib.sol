@@ -138,50 +138,14 @@ library BLSLib {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    //                    G1 / G2 POINT OPERATIONS
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /// @notice Add two G1 points using the G1ADD precompile
-    /// @param p1 First G1 point (128 bytes uncompressed)
-    /// @param p2 Second G1 point (128 bytes uncompressed)
-    /// @return result Resulting G1 point (128 bytes)
-    function g1Add(bytes calldata p1, bytes calldata p2) internal view returns (bytes memory result) {
-        result = new bytes(128);
-        assembly ("memory-safe") {
-            let ptr := mload(0x40)
-            calldatacopy(ptr, p1.offset, 0x80)
-            calldatacopy(add(ptr, 0x80), p2.offset, 0x80)
-            let success := staticcall(gas(), 0x0b, ptr, 0x100, add(result, 0x20), 0x80)
-            if iszero(success) {
-                // BLSSignatureInvalid()
-                mstore(0x00, 0x10e416aa)
-                revert(0x1c, 0x04)
-            }
-        }
-    }
-
-    /// @notice Add two G2 points using the G2ADD precompile
-    /// @param p1 First G2 point (256 bytes uncompressed)
-    /// @param p2 Second G2 point (256 bytes uncompressed)
-    /// @return result Resulting G2 point (256 bytes)
-    function g2Add(bytes calldata p1, bytes calldata p2) internal view returns (bytes memory result) {
-        result = new bytes(256);
-        assembly ("memory-safe") {
-            let ptr := mload(0x40)
-            calldatacopy(ptr, p1.offset, 0x100)
-            calldatacopy(add(ptr, 0x100), p2.offset, 0x100)
-            let success := staticcall(gas(), 0x0d, ptr, 0x200, add(result, 0x20), 0x100)
-            if iszero(success) {
-                // BLSSignatureInvalid()
-                mstore(0x00, 0x10e416aa)
-                revert(0x1c, 0x04)
-            }
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
     //                    PRECOMPILE AVAILABILITY CHECK
     // ═══════════════════════════════════════════════════════════════════════════
+    //
+    // NOTE: G1/G2 point-add and general msm/pairing operations over decoded
+    // (memory-struct) points are already provided by Solady's `BLS` library
+    // (solady/utils/ext/ithaca/BLS.sol) — import that directly if you need them.
+    // This library stays calldata-native throughout (the "dumb contract, smart
+    // Rust" design above), so it does not re-wrap that struct-based API.
 
     /// @notice Check if EIP-2537 BLS precompiles are available on this chain
     /// @dev Calls G1ADD with the identity point (zero) — succeeds only if precompile exists.
