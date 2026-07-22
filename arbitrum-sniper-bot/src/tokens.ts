@@ -68,7 +68,7 @@ export const getTokens = async (): Promise<Tokens> => {
     Events(
       limit: {count:1}
       orderBy: {descending: Block_Time}
-      where: {Log: {Signature: {Name: {is: "PoolCreated"}}, SmartContract: {is: "0x1F98431c8aD98523631AE4a59f267346ea31F984"}}, Arguments: {startsWith: {Value: {Address: {is: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"}}}}}
+      where: {Log: {Signature: {Name: {is: "PoolCreated"}}, SmartContract: {is: "0x1F98431c8aD98523631AE4a59f267346ea31F984"}}}
     ) {
       Transaction {
         Hash
@@ -124,8 +124,19 @@ export const getTokens = async (): Promise<Tokens> => {
 
     const response = await axios.request(axiosConfig);
 
-    const token0Address = response.data.data.EVM.Events[0].Arguments[0].Value.address;
-    const token1Address = response.data.data.EVM.Events[0].Arguments[1].Value.address;
+    if (!response.data.data?.EVM?.Events || response.data.data.EVM.Events.length === 0) {
+      console.error('No recent pool creation events found');
+      return { Token0: null, Token1: null };
+    }
+
+    const events = response.data.data.EVM.Events[0];
+    if (!events.Arguments || events.Arguments.length < 2) {
+      console.error('Invalid event structure: missing Arguments');
+      return { Token0: null, Token1: null };
+    }
+
+    const token0Address = events.Arguments[0].Value.address;
+    const token1Address = events.Arguments[1].Value.address;
 
     console.log(`Token0: ${token0Address}`);
     console.log(`Token1: ${token1Address}`);

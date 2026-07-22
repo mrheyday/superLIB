@@ -78,17 +78,23 @@ class SniperBot {
 
       // Calculate route
       logger.info('Calculating optimal swap route...');
-      const route = await this.router.route(
-        CurrencyAmount.fromRawAmount(tokenFrom, this.config.swapAmount.toString()),
-        tokenTo,
-        TradeType.EXACT_INPUT,
-        {
-          recipient: walletAddress,
-          slippageTolerance: SLIPPAGE_TOLERANCE,
-          deadline: DEADLINE,
-          type: SwapType.SWAP_ROUTER_02,
-        }
-      );
+      let route;
+      try {
+        route = await this.router.route(
+          CurrencyAmount.fromRawAmount(tokenFrom, this.config.swapAmount.toString()),
+          tokenTo,
+          TradeType.EXACT_INPUT,
+          {
+            recipient: walletAddress,
+            slippageTolerance: SLIPPAGE_TOLERANCE,
+            deadline: DEADLINE,
+            type: SwapType.SWAP_ROUTER_02,
+          }
+        );
+      } catch (routeError) {
+        logger.error(`Route calculation failed: ${routeError instanceof Error ? routeError.message : String(routeError)}`);
+        throw new Error('Failed to calculate swap route');
+      }
 
       if (!route) {
         throw new Error('No swap route found');
