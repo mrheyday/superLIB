@@ -158,7 +158,7 @@ contract SniperSearcher {
   /// @param tokens Array of token addresses
   /// @param to Recipient address
   function withdrawAll(address[] calldata tokens, address to) external onlyOwner {
-    for (uint256 i; i < tokens.length; ++i) {
+    for (uint256 i = 0; i < tokens.length; ++i) {
       uint256 balance = IERC20(tokens[i]).balanceOf(address(this));
       if (balance > 0) {
         IERC20(tokens[i]).safeTransfer(to, balance);
@@ -172,6 +172,16 @@ contract SniperSearcher {
   /// @return Balance of token in this contract
   function getBalance(address token) external view returns (uint256) {
     return IERC20(token).balanceOf(address(this));
+  }
+
+  /// @notice Withdraw ETH from contract
+  /// @param to Recipient address
+  /// @param amount Amount to withdraw (0 = all)
+  function withdrawETH(address payable to, uint256 amount) external onlyOwner {
+    if (amount == 0) amount = address(this).balance;
+    require(to != address(0), 'Invalid recipient');
+    (bool success,) = to.call{value: amount}('');
+    require(success, 'ETH transfer failed');
   }
 
   /// @dev Extract output token from Uniswap V3 path encoding

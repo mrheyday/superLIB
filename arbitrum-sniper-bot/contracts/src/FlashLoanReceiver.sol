@@ -134,6 +134,16 @@ contract FlashLoanReceiver {
     IERC20(token).safeTransfer(to, amount);
   }
 
+  /// @notice Withdraw ETH from contract
+  /// @param to Recipient address
+  /// @param amount Amount to withdraw (0 = all)
+  function withdrawETH(address payable to, uint256 amount) external onlyOwner {
+    if (amount == 0) amount = address(this).balance;
+    require(to != address(0), 'Invalid recipient');
+    (bool success,) = to.call{value: amount}('');
+    require(success, 'ETH transfer failed');
+  }
+
   /// @notice Check contract token balance
   /// @param token Token address
   /// @return Balance of token

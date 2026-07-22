@@ -44,8 +44,8 @@ contract DelegatedExecutor {
   ) external returns (uint256 amountOut) {
     if (block.timestamp > deadline) revert DeadlineExceeded();
 
-    // Transfer tokens from EOA (msg.sender)
-    IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+    // Transfer tokens from EOA (msg.sender) - use SafeERC20
+    SafeERC20.safeTransferFrom(IERC20(tokenIn), msg.sender, address(this), amountIn);
 
     // Approve router with SafeERC20
     SafeERC20.forceApprove(IERC20(tokenIn), SWAP_ROUTER, amountIn);
@@ -74,7 +74,7 @@ contract DelegatedExecutor {
   ) external returns (uint256 amountOut) {
     if (block.timestamp > deadline) revert DeadlineExceeded();
 
-    IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+    SafeERC20.safeTransferFrom(IERC20(tokenIn), msg.sender, address(this), amountIn);
     SafeERC20.forceApprove(IERC20(tokenIn), SWAP_ROUTER, amountIn);
 
     try
@@ -90,9 +90,9 @@ contract DelegatedExecutor {
       _executeCallback(callbackData, amountOut);
     }
 
-    // Transfer output to EOA
+    // Transfer output to EOA - use SafeERC20
     address tokenOut = _getTokenOut(path);
-    IERC20(tokenOut).transfer(msg.sender, amountOut);
+    SafeERC20.safeTransfer(IERC20(tokenOut), msg.sender, amountOut);
 
     emit Swap(tokenIn, tokenOut, amountIn, amountOut);
   }
@@ -117,8 +117,8 @@ contract DelegatedExecutor {
     for (uint256 i = 0; i < swaps.length; ++i) {
       SwapRequest calldata swap = swaps[i];
 
-      // Transfer input from EOA
-      IERC20(swap.tokenIn).transferFrom(msg.sender, address(this), swap.amountIn);
+      // Transfer input from EOA - use SafeERC20
+      SafeERC20.safeTransferFrom(IERC20(swap.tokenIn), msg.sender, address(this), swap.amountIn);
 
       // Approve and execute
       SafeERC20.forceApprove(IERC20(swap.tokenIn), SWAP_ROUTER, swap.amountIn);
