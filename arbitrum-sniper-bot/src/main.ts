@@ -1,9 +1,19 @@
 import { BigNumber, ethers } from 'ethers';
 import { getTokens } from './tokens';
 import { ExecutionBridge } from './bridge';
-import { encodePath, calculateMinimumOutput, validatePath } from './uniswap';
-import { provider, signer, DEADLINE } from './config';
+import { encodePath, calculateMinimumOutput, validatePath, getOptimalFee } from './uniswap';
+import {
+  provider,
+  signer,
+  DEADLINE,
+  SNIPER_SEARCHER_ADDRESS,
+  FLASH_LOAN_RECEIVER_ADDRESS,
+  DELEGATED_EXECUTOR_ADDRESS,
+  SIGNER_ADDRESS,
+  SLIPPAGE_TOLERANCE,
+} from './config';
 import { Logger } from './logger';
+import { validateAndChecksumAddress, validateSwapParams, validateFeeTier } from './validation';
 
 interface OpportunityParams {
   tokenIn: string;
@@ -72,15 +82,22 @@ class SniperBot {
         `Token balance: ${ethers.utils.formatUnits(tokenBalance, tokenFrom.decimals)} ${tokenFrom.symbol}`
       );
 
-      // Calculate quote (simplified for demo)
+      // Calculate quote
       logger.info('Calculating optimal swap route...');
 
-      // For demo, use a fixed output ratio (1:1 simplified, real implementation would use pool math)
-      // In production, use Uniswap V3's quoter contract
-      const quotedAmount = this.config.swapAmount.mul(95).div(100); // 95% output (5% slippage buffer)
+      // Quote from router (simplified: use 1:1 ratio for demo)
+      // In production, call Uniswap Quoter V3 for accurate pricing
+      const quotedAmount = this.config.swapAmount.mul(95).div(100); // 95% of input (5% impact)
       const estimatedOutputRaw = quotedAmount;
+
+      // Calculate minimum output with slippage protection (50 bps = 0.5%)
       const minOutput = calculateMinimumOutput(estimatedOutputRaw, 0.5);
-      const estimatedProfit = estimatedOutputRaw.sub(this.config.swapAmount);
+
+      // Profit calculation: output minus input (proper comparison)
+      // Note: This assumes 1:1 decimal ratio for demo; production should normalize decimals
+      const estimatedProfit = estimatedOutputRaw.gt(this.config.swapAmount)
+        ? estimatedOutputRaw.sub(this.config.swapAmount)
+        : BigNumber.from(0);
 
       logger.info(
         `Route calculated: ${ethers.utils.formatUnits(estimatedOutputRaw, tokenTo.decimals)} ${tokenTo.symbol}`
@@ -89,15 +106,18 @@ class SniperBot {
         `Estimated profit: ${ethers.utils.formatUnits(estimatedProfit, tokenTo.decimals)} ${tokenTo.symbol}`
       );
 
-      // Encode swap path
-      const path = encodePath(
-        [tokenFrom.address, tokenTo.address],
-        [3000] // 0.3% fee tier
-      );
+      // Determine optimal fee tier based on token pair
+      const feeTier = getOptimalFee(tokenFrom.address, tokenTo.address);
+      validateFeeTier(feeTier);
 
-      if (!validatePath([tokenFrom.address, tokenTo.address], [3000])) {
+      // Encode swap path
+      const path = encodePath([tokenFrom.address, tokenTo.address], [feeTier]);
+
+      if (!validatePath([tokenFrom.address, tokenTo.address], [feeTier])) {
         throw new Error('Invalid swap path');
       }
+
+      logger.info(`Fee tier selected: ${feeTier} (${(feeTier / 10000) * 100}%)`);
 
       // Execute via bridge
       logger.info('Executing swap via execution bridge...');
@@ -162,7 +182,7 @@ class SniperBot {
   }
 
   /**
-   * Verify bot setup
+   * Verify bot setup - validates all contract addresses and RPC connection
    */
   private async verifySetup(): Promise<void> {
     logger.info('Verifying setup...');
@@ -172,10 +192,35 @@ class SniperBot {
     logger.info(`✓ RPC connected (block ${blockNumber})`);
 
     // Check wallet
-    const walletAddress = await signer.getAddress();
+    const walletAddress = validateAndChecksumAddress(await signer.getAddress());
     logger.info(`✓ Wallet: ${walletAddress}`);
 
-    // Check execution contracts
+    // Validate contract addresses are deployed
+    try {
+      const sniperCode = await provider.getCode(SNIPER_SEARCHER_ADDRESS);
+      if (sniperCode === '0x') {
+        throw new Error(`SniperSearcher not deployed at ${SNIPER_SEARCHER_ADDRESS}`);
+      }
+      logger.info(`✓ SniperSearcher: ${SNIPER_SEARCHER_ADDRESS}`);
+
+      const flashCode = await provider.getCode(FLASH_LOAN_RECEIVER_ADDRESS);
+      if (flashCode === '0x') {
+        throw new Error(`FlashLoanReceiver not deployed at ${FLASH_LOAN_RECEIVER_ADDRESS}`);
+      }
+      logger.info(`✓ FlashLoanReceiver: ${FLASH_LOAN_RECEIVER_ADDRESS}`);
+
+      const delegatedCode = await provider.getCode(DELEGATED_EXECUTOR_ADDRESS);
+      if (delegatedCode === '0x') {
+        throw new Error(`DelegatedExecutor not deployed at ${DELEGATED_EXECUTOR_ADDRESS}`);
+      }
+      logger.info(`✓ DelegatedExecutor: ${DELEGATED_EXECUTOR_ADDRESS}`);
+    } catch (error) {
+      throw new Error(
+        `Contract validation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+
+    // Check execution contracts status
     const stats = await this.bridge.getExecutionStats();
     logger.info(`✓ Direct mode: ${stats.directReady ? 'ready' : 'not ready'}`);
     logger.info(`✓ Flash loan: ${stats.flashLoanReady ? 'ready' : 'not ready'}`);
@@ -187,31 +232,27 @@ class SniperBot {
  * Main entry point
  */
 async function main() {
-  // Load config
-  if (
-    !process.env.SNIPER_SEARCHER_ADDRESS ||
-    !process.env.FLASH_LOAN_RECEIVER_ADDRESS ||
-    !process.env.DELEGATED_EXECUTOR_ADDRESS
-  ) {
-    logger.error('Missing contract addresses in environment variables');
+  try {
+    // Contract addresses are validated in config.ts - use checksummed versions
+    const swapAmount = process.argv[2]
+      ? ethers.utils.parseUnits(process.argv[2], 18)
+      : ethers.utils.parseUnits('0.001', 18);
+
+    const config: Config = {
+      sniperSearcherAddress: SNIPER_SEARCHER_ADDRESS,
+      flashLoanReceiverAddress: FLASH_LOAN_RECEIVER_ADDRESS,
+      delegatedExecutorAddress: DELEGATED_EXECUTOR_ADDRESS,
+      swapAmount,
+      maxRetries: 3,
+      retryDelayMs: 2000,
+    };
+
+    const bot = new SniperBot(config);
+    await bot.run();
+  } catch (error) {
+    logger.error(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
-
-  const swapAmount = process.argv[2]
-    ? ethers.utils.parseUnits(process.argv[2], 18)
-    : ethers.utils.parseUnits('0.001', 18);
-
-  const config: Config = {
-    sniperSearcherAddress: process.env.SNIPER_SEARCHER_ADDRESS,
-    flashLoanReceiverAddress: process.env.FLASH_LOAN_RECEIVER_ADDRESS,
-    delegatedExecutorAddress: process.env.DELEGATED_EXECUTOR_ADDRESS,
-    swapAmount,
-    maxRetries: 3,
-    retryDelayMs: 2000,
-  };
-
-  const bot = new SniperBot(config);
-  await bot.run();
 }
 
 main().catch((error) => {

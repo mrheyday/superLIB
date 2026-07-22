@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { validateAndChecksumAddress, validateFeeTier } from './validation';
 
 export interface IUniswapV3Router02 {
   exactInput(params: ExactInputParams): Promise<ethers.BigNumber>;
@@ -28,7 +29,7 @@ export interface ExactInputSingleParams {
  * Encode a swap path for Uniswap V3 multi-hop swaps
  * Path format: token0 → (fee) → token1 → (fee) → token2 → ...
  *
- * @param tokens Array of token addresses
+ * @param tokens Array of token addresses (will be checksummed)
  * @param fees Array of pool fees (3000, 500, etc.)
  * @returns Encoded path as Buffer
  */
@@ -37,10 +38,18 @@ export function encodePath(tokens: string[], fees: number[]): Buffer {
     throw new Error('tokens length must be fees length + 1');
   }
 
+  // Validate and checksum all addresses
+  const checksummedTokens = tokens.map((t) => validateAndChecksumAddress(t));
+
+  // Validate all fee tiers
+  for (const fee of fees) {
+    validateFeeTier(fee);
+  }
+
   let encoded = '0x';
-  for (let i = 0; i < tokens.length; i++) {
+  for (let i = 0; i < checksummedTokens.length; i++) {
     // Add token (remove 0x prefix)
-    encoded += tokens[i].slice(2);
+    encoded += checksummedTokens[i].slice(2);
 
     // Add fee if not last token
     if (i < fees.length) {
@@ -123,30 +132,32 @@ export function calculateMinimumOutput(
 }
 
 /**
- * Validate a swap path
+ * Validate a swap path - checks token addresses and fee tiers
  */
 export function validatePath(tokens: string[], fees: number[]): boolean {
   if (tokens.length < 2) {
-    console.error('Path must have at least 2 tokens');
-    return false;
+    throw new Error('Path must have at least 2 tokens');
   }
 
   if (tokens.length !== fees.length + 1) {
-    console.error('Invalid fees array length');
-    return false;
+    throw new Error('Invalid fees array length');
   }
 
+  // Validate all token addresses
   for (const token of tokens) {
-    if (!ethers.utils.isAddress(token)) {
-      console.error(`Invalid token address: ${token}`);
-      return false;
+    try {
+      validateAndChecksumAddress(token);
+    } catch (error) {
+      throw new Error(`Invalid token address: ${token}`);
     }
   }
 
+  // Validate all fee tiers
   for (const fee of fees) {
-    if (![100, 500, 3000, 10000].includes(fee)) {
-      console.error(`Invalid fee tier: ${fee}`);
-      return false;
+    try {
+      validateFeeTier(fee);
+    } catch (error) {
+      throw new Error(`Invalid fee tier: ${fee}`);
     }
   }
 

@@ -1,5 +1,9 @@
-import { BigNumber, ethers, Signer } from 'ethers';
-import { signer } from './config';
+import { BigNumber, ethers, Signer, providers } from 'ethers';
+import { signer, provider } from './config';
+import { SNIPER_SEARCHER_ABI } from './abis';
+import { Logger } from './logger';
+
+const logger = new Logger('SniperExecutor');
 
 interface SwapParams {
   tokenIn: string;
@@ -15,14 +19,8 @@ interface ExecutionResult {
   amountOut?: BigNumber;
   error?: string;
   gasUsed?: BigNumber;
+  revertReason?: string;
 }
-
-const SNIPER_SEARCHER_ABI = [
-  'function executeSwap(address tokenIn, uint256 amountIn, bytes calldata path, uint256 minAmountOut) external returns (uint256)',
-  'function executeSwapWithDeadline(address tokenIn, uint256 amountIn, bytes calldata path, uint256 minAmountOut, uint256 deadline) external returns (uint256)',
-  'function withdraw(address token, address to, uint256 amount) external',
-  'function getBalance(address token) external view returns (uint256)',
-];
 
 export class SniperExecutor {
   private searcher: ethers.Contract;
@@ -34,17 +32,18 @@ export class SniperExecutor {
   }
 
   /**
-   * Execute swap through SniperSearcher contract
+   * Execute swap through SniperSearcher contract with transaction polling
    */
   async executeSwap(params: SwapParams): Promise<ExecutionResult> {
+    let txHash: string | undefined;
     try {
-      console.log(`\n📊 Executing swap...`);
-      console.log(`  Input: ${ethers.utils.formatUnits(params.amountIn, 18)} tokens`);
-      console.log(`  Min output: ${ethers.utils.formatUnits(params.minAmountOut, 6)}`);
+      logger.info('Executing swap via SniperSearcher');
+      logger.info(`Input: ${ethers.utils.formatUnits(params.amountIn, 18)}`);
+      logger.info(`Min output: ${ethers.utils.formatUnits(params.minAmountOut, 18)}`);
 
       // Estimate gas
       const gasEstimate = await this.estimateSwapGas(params);
-      console.log(`  Gas estimate: ${gasEstimate.toString()}`);
+      logger.info(`Gas estimate: ${gasEstimate.toString()}`);
 
       // Execute swap
       const tx = await this.searcher.executeSwap(
@@ -54,37 +53,123 @@ export class SniperExecutor {
         params.minAmountOut,
         {
           gasLimit: gasEstimate.mul(110).div(100), // 10% buffer
+          maxFeePerGas: await provider.getGasPrice().then((p) => p.mul(120).div(100)), // 20% above current
         }
       );
 
-      console.log(`✋ Transaction sent: ${tx.hash}`);
+      txHash = tx.hash;
+      logger.info(`Transaction sent: ${txHash}`);
 
-      // Wait for confirmation
-      const receipt = await tx.wait(3); // Wait for 3 confirmations
+      // Poll for confirmation with timeout
+      if (!txHash) {
+        throw new Error('Transaction sent but no hash returned');
+      }
+
+      const receipt = await this.pollTransactionStatus(txHash, 30 * 1000, 12); // 30s max, 12 blocks
 
       if (!receipt) {
         return {
           success: false,
-          error: 'Transaction failed - no receipt',
+          error: 'Transaction timeout - no confirmation after 30s',
+          txHash,
         };
       }
 
-      console.log(`✅ Confirmed in block ${receipt.blockNumber}`);
-      console.log(`   Gas used: ${receipt.gasUsed.toString()}`);
+      if (receipt.status === 0) {
+        const revertReason = await this.decodeRevertReason(txHash);
+        logger.error(`Transaction reverted: ${revertReason}`);
+        return {
+          success: false,
+          error: 'Transaction reverted',
+          revertReason,
+          txHash,
+        };
+      }
+
+      logger.info(`Confirmed in block ${receipt.blockNumber}, gas used: ${receipt.gasUsed}`);
 
       return {
         success: true,
-        txHash: tx.hash,
+        txHash,
         gasUsed: receipt.gasUsed,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`❌ Swap failed: ${errorMsg}`);
+      logger.error(`Swap execution failed: ${errorMsg}`);
 
       return {
         success: false,
         error: errorMsg,
+        txHash,
       };
+    }
+  }
+
+  /**
+   * Poll transaction status until confirmation or timeout
+   */
+  private async pollTransactionStatus(
+    txHash: string,
+    maxWaitMs: number,
+    maxBlocks: number
+  ): Promise<providers.TransactionReceipt | null> {
+    const startTime = Date.now();
+    const startBlock = await provider.getBlockNumber();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const receipt = await provider.getTransactionReceipt(txHash);
+
+      if (receipt) {
+        return receipt;
+      }
+
+      const currentBlock = await provider.getBlockNumber();
+      if (currentBlock - startBlock >= maxBlocks) {
+        return null;
+      }
+
+      // Wait 2 seconds before polling again
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    return null;
+  }
+
+  /**
+   * Decode revert reason from failed transaction
+   */
+  private async decodeRevertReason(txHashValue: string): Promise<string> {
+    try {
+      const tx = await provider.getTransaction(txHashValue);
+      if (!tx) return 'Transaction not found';
+
+      // Create a transaction request for the call
+      const txRequest = {
+        to: tx.to,
+        from: tx.from,
+        data: tx.data,
+        value: tx.value,
+      };
+
+      try {
+        const result = await provider.call(txRequest, tx.blockNumber);
+        if (result === '0x') return 'Unknown error';
+
+        // Try to decode as Error(string)
+        try {
+          const iface = new ethers.utils.Interface([
+            'function Error(string) public pure',
+          ]);
+          const decoded = iface.decodeFunctionResult('Error', result);
+          return decoded[0] as string;
+        } catch {
+          return `Raw error data: ${result.slice(0, 200)}`;
+        }
+      } catch (callError) {
+        return callError instanceof Error ? callError.message : 'Call failed';
+      }
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Unknown error';
     }
   }
 

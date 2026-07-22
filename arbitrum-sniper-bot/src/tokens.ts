@@ -4,8 +4,12 @@ import { CHAIN_ID } from './config';
 import { Provider } from '@ethersproject/providers';
 import axios, { AxiosRequestConfig } from 'axios';
 import { config as loadEnvironmentVariables } from 'dotenv';
+import { validateAndChecksumAddress } from './validation';
+import { Logger } from './logger';
 
 loadEnvironmentVariables();
+
+const logger = new Logger('TokenDetector');
 
 const ERC20_ABI = [
   'function name() view returns (string)',
@@ -27,7 +31,10 @@ const buildERC20TokenWithContract = async (
   provider: Provider
 ): Promise<TokenWithContract | null> => {
   try {
-    const contract = new Contract(address, ERC20_ABI, provider);
+    // Validate and checksum address
+    const checksummedAddress = validateAndChecksumAddress(address);
+
+    const contract = new Contract(checksummedAddress, ERC20_ABI, provider);
 
     const [name, symbol, decimals] = await Promise.all([
       contract.name(),
@@ -35,19 +42,25 @@ const buildERC20TokenWithContract = async (
       contract.decimals(),
     ]);
 
+    if (!name || !symbol || decimals === undefined) {
+      logger.warn(`Token at ${checksummedAddress} missing required fields`);
+      return null;
+    }
+
     return {
       contract: contract,
 
       walletHas: async (signer, requiredAmount) => {
         const signerBalance = await contract.connect(signer).balanceOf(await signer.getAddress());
-
         return signerBalance.gte(BigNumber.from(requiredAmount));
       },
 
-      token: new Token(CHAIN_ID, address, decimals, symbol, name),
+      token: new Token(CHAIN_ID, checksummedAddress, decimals, symbol, name),
     };
   } catch (error) {
-    console.error(`Failed to fetch token details for address ${address}:`, error);
+    logger.error(
+      `Failed to fetch token details for ${address}: ${error instanceof Error ? error.message : String(error)}`
+    );
     return null;
   }
 };
@@ -138,15 +151,30 @@ export const getTokens = async (): Promise<Tokens> => {
     const token0Address = events.Arguments[0].Value.address;
     const token1Address = events.Arguments[1].Value.address;
 
-    console.log(`Token0: ${token0Address}`);
-    console.log(`Token1: ${token1Address}`);
+    if (!token0Address || !token1Address) {
+      logger.error('Pool creation event missing token addresses');
+      return { Token0: null, Token1: null };
+    }
 
-    const Token0 = await buildERC20TokenWithContract(token0Address, provider);
-    const Token1 = await buildERC20TokenWithContract(token1Address, provider);
+    logger.info(`Detected tokens: ${token0Address} ↔ ${token1Address}`);
 
+    const [Token0, Token1] = await Promise.all([
+      buildERC20TokenWithContract(token0Address, provider),
+      buildERC20TokenWithContract(token1Address, provider),
+    ]);
+
+    // Both tokens must be valid
+    if (!Token0 || !Token1) {
+      logger.error('Failed to build one or both ERC20 token wrappers');
+      return { Token0: null, Token1: null };
+    }
+
+    logger.info(`✓ Tokens loaded: ${Token0.token.symbol} ↔ ${Token1.token.symbol}`);
     return { Token0, Token1 };
   } catch (error) {
-    console.error('Error fetching tokens:', error);
+    logger.error(
+      `Error fetching tokens from Bitquery: ${error instanceof Error ? error.message : String(error)}`
+    );
     return { Token0: null, Token1: null };
   }
 };
