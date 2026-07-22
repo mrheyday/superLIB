@@ -62,7 +62,7 @@ type Tokens = {
 
 export const getTokens = async (): Promise<Tokens> => {
   try {
-    let data = JSON.stringify({
+    const data = JSON.stringify({
       query: `query {
   EVM(network: arbitrum) {
     Events(

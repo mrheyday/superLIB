@@ -1,5 +1,5 @@
 import { Percent } from '@uniswap/sdk-core';
-import { ethers, providers, Wallet } from 'ethers';
+import { providers, Wallet } from 'ethers';
 import { config as loadEnvironmentVariables } from 'dotenv';
 
 loadEnvironmentVariables();
