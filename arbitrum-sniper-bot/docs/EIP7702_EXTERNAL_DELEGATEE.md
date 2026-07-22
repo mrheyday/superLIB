@@ -6,24 +6,29 @@ Instead of deploying your own `DelegatedExecutor`, you can use existing well-tes
 
 ### Recommended: Vectorized's "bebe" Delegatee
 
-**Repository:** https://github.com/vectorized/bebe  
-**Type:** Optimized batch executor for EIP-7702  
-**Benefits:**
-- ✅ Audited and battle-tested
+**Repository:** https://github.com/Vectorized/bebe  
+**Type:** ERC-7821 EOA Batch Executor for EIP-7702  
+**Canonical Address:** `0x00000000BEBEDB7C30ee418158e26E31a5A8f3E2` (all networks)  
+
+**Features:**
+- ✅ Stateless design (no storage dependencies)
+- ✅ ERC-1271 signature validation (ecrecover)
+- ✅ Batch operation support
 - ✅ Optimized gas efficiency
-- ✅ Handles batch operations
-- ✅ Supports native transfers and swaps
+- ✅ Same address across all networks
 
 ### Integration Steps
 
 #### 1. Get the Deployed Address
 
-Vectorized publishes deployed addresses for major networks. For Arbitrum:
+bebe uses a canonical address on all networks (Ethereum, Arbitrum, Sepolia, etc.):
 
 ```bash
-# Check the bebe GitHub releases or contract registry
-# Format: 0x<contract-address>
-BEBE_ADDRESS=0x<deployed-address>  # Find from bebe repo
+# Canonical bebe address (same on all chains)
+BEBE_ADDRESS=0x00000000BEBEDB7C30ee418158e26E31a5A8f3E2
+
+# GitHub: https://github.com/Vectorized/bebe
+# ERC-7821 EOA Batch Executor with ERC-1271 validation
 ```
 
 #### 2. Update Configuration
