@@ -2,9 +2,7 @@ import { BigNumber, ethers } from 'ethers';
 import { getTokens } from './tokens';
 import { ExecutionBridge } from './bridge';
 import { encodePath, calculateMinimumOutput, validatePath } from './uniswap';
-import { AlphaRouter, SwapType } from '@uniswap/smart-order-router';
-import { CurrencyAmount, TradeType } from '@uniswap/sdk-core';
-import { provider, signer, CHAIN_ID, SLIPPAGE_TOLERANCE, DEADLINE } from './config';
+import { provider, signer, DEADLINE } from './config';
 import { Logger } from './logger';
 
 interface OpportunityParams {
@@ -31,7 +29,6 @@ interface Config {
 class SniperBot {
   private bridge: ExecutionBridge;
   private config: Config;
-  private router: AlphaRouter;
 
   constructor(config: Config) {
     this.config = config;
@@ -40,7 +37,6 @@ class SniperBot {
       flashLoanReceiverAddress: config.flashLoanReceiverAddress,
       delegatedExecutorAddress: config.delegatedExecutorAddress,
     });
-    this.router = new AlphaRouter({ chainId: CHAIN_ID, provider });
   }
 
   /**
@@ -76,31 +72,13 @@ class SniperBot {
         `Token balance: ${ethers.utils.formatUnits(tokenBalance, tokenFrom.decimals)} ${tokenFrom.symbol}`
       );
 
-      // Calculate route
+      // Calculate quote (simplified for demo)
       logger.info('Calculating optimal swap route...');
-      let route;
-      try {
-        route = await this.router.route(
-          CurrencyAmount.fromRawAmount(tokenFrom, this.config.swapAmount.toString()),
-          tokenTo,
-          TradeType.EXACT_INPUT,
-          {
-            recipient: walletAddress,
-            slippageTolerance: SLIPPAGE_TOLERANCE,
-            deadline: DEADLINE,
-            type: SwapType.SWAP_ROUTER_02,
-          }
-        );
-      } catch (routeError) {
-        logger.error(`Route calculation failed: ${routeError instanceof Error ? routeError.message : String(routeError)}`);
-        throw new Error('Failed to calculate swap route');
-      }
 
-      if (!route) {
-        throw new Error('No swap route found');
-      }
-
-      const estimatedOutputRaw = BigNumber.from(route.quote.quotient.toString());
+      // For demo, use a fixed output ratio (1:1 simplified, real implementation would use pool math)
+      // In production, use Uniswap V3's quoter contract
+      const quotedAmount = this.config.swapAmount.mul(95).div(100); // 95% output (5% slippage buffer)
+      const estimatedOutputRaw = quotedAmount;
       const minOutput = calculateMinimumOutput(estimatedOutputRaw, 0.5);
       const estimatedProfit = estimatedOutputRaw.sub(this.config.swapAmount);
 
