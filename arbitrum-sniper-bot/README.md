@@ -70,7 +70,7 @@ Where `0.001` is the amount of WETH (or base token) to swap.
 2. **Identifies Token1**: Extracts Token1 address from the pool creation event
 3. **Validates Wallet**: Checks wallet has sufficient WETH balance for the swap
 4. **Routes Swap**: Uses Uniswap AlphaRouter to find optimal swap path
-5. **Approves & Swaps**: 
+5. **Approves & Swaps**:
    - Approves WETH spending if allowance insufficient
    - Executes swap with configured slippage and deadline
    - Waits for 3 confirmations before executing (optional)

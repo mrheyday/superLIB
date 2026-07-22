@@ -1,22 +1,19 @@
-import { Percent } from "@uniswap/sdk-core";
-import { ethers, providers, Wallet } from "ethers";
-import { config as loadEnvironmentVariables } from "dotenv";
+import { Percent } from '@uniswap/sdk-core';
+import { ethers, providers, Wallet } from 'ethers';
+import { config as loadEnvironmentVariables } from 'dotenv';
 
 loadEnvironmentVariables();
 
-export const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || "";
-export const SWAP_ROUTER_ADDRESS = process.env.SWAP_ROUTER_ADDRESS || "";
+export const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY || '';
+export const SWAP_ROUTER_ADDRESS = process.env.SWAP_ROUTER_ADDRESS || '';
 
-export const CHAIN_ID = parseInt(process.env.CHAIN_ID || "42161");
+export const CHAIN_ID = parseInt(process.env.CHAIN_ID || '42161');
 
 export const DEADLINE = Math.floor(
-  Date.now() / 1000 + (parseInt(process.env.DEADLINE_IN_MINUTES || "30") * 60)
+  Date.now() / 1000 + parseInt(process.env.DEADLINE_IN_MINUTES || '30') * 60
 );
 
-export const SLIPPAGE_TOLERANCE = new Percent(
-  process.env.SLIPPAGE_TOLERANCE || "5",
-  100
-);
+export const SLIPPAGE_TOLERANCE = new Percent(process.env.SLIPPAGE_TOLERANCE || '5', 100);
 
 const RPC = process.env.RPC;
 export const provider = new providers.JsonRpcProvider(RPC);

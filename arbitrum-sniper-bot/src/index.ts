@@ -1,12 +1,8 @@
-import { BigNumber, ethers } from "ethers";
-import {
-  AlphaRouter,
-  SwapType,
-  SwapRoute,
-} from "@uniswap/smart-order-router";
-import { CurrencyAmount, TradeType } from "@uniswap/sdk-core";
-import type { TransactionRequest } from "@ethersproject/abstract-provider";
-import { getTokens } from "./tokens";
+import { BigNumber, ethers } from 'ethers';
+import { AlphaRouter, SwapType, SwapRoute } from '@uniswap/smart-order-router';
+import { CurrencyAmount, TradeType } from '@uniswap/sdk-core';
+import type { TransactionRequest } from '@ethersproject/abstract-provider';
+import { getTokens } from './tokens';
 import {
   provider,
   signer,
@@ -14,7 +10,7 @@ import {
   SWAP_ROUTER_ADDRESS,
   SLIPPAGE_TOLERANCE,
   DEADLINE,
-} from "./config";
+} from './config';
 
 async function main() {
   // Fetch tokens from Bitquery
@@ -22,7 +18,7 @@ async function main() {
 
   // Ensure tokens are not null
   if (!Token0 || !Token1) {
-    throw new Error("Tokens are not initialized.");
+    throw new Error('Tokens are not initialized.');
   }
 
   const tokenFrom = Token0.token;
@@ -30,15 +26,12 @@ async function main() {
   const tokenTo = Token1.token;
 
   // Check if amount is passed as argument
-  if (typeof process.argv[2] === "undefined") {
+  if (typeof process.argv[2] === 'undefined') {
     throw new Error(`Pass in the amount of ${tokenFrom.symbol} to swap.`);
   }
 
   const walletAddress = await signer.getAddress();
-  const amountIn = ethers.utils.parseUnits(
-    process.argv[2],
-    tokenFrom.decimals
-  );
+  const amountIn = ethers.utils.parseUnits(process.argv[2], tokenFrom.decimals);
   const balance = await tokenFromContract.balanceOf(walletAddress);
 
   if (!(await Token0.walletHas(signer, amountIn))) {
@@ -66,7 +59,7 @@ async function main() {
   );
 
   if (!route) {
-    throw new Error("No route found for the swap.");
+    throw new Error('No route found for the swap.');
   }
 
   console.log(
@@ -91,31 +84,22 @@ async function main() {
       to: routerAddress,
       value: BigNumber.from(route.methodParameters?.value || 0),
       from: walletAddress,
-      gasLimit: BigNumber.from("2000000"),
+      gasLimit: BigNumber.from('2000000'),
     };
   };
 
-  const swapTransaction = buildSwapTransaction(
-    walletAddress,
-    SWAP_ROUTER_ADDRESS,
-    route
-  );
+  const swapTransaction = buildSwapTransaction(walletAddress, SWAP_ROUTER_ADDRESS, route);
 
-  const attemptSwapTransaction = async (
-    signer: ethers.Wallet,
-    transaction: TransactionRequest
-  ) => {
+  const attemptSwapTransaction = async (signer: ethers.Wallet, transaction: TransactionRequest) => {
     const signerBalance = await signer.getBalance();
 
-    if (!signerBalance.gte(transaction.gasLimit || "0")) {
-      throw new Error(
-        `Not enough ETH to cover gas: ${transaction.gasLimit}`
-      );
+    if (!signerBalance.gte(transaction.gasLimit || '0')) {
+      throw new Error(`Not enough ETH to cover gas: ${transaction.gasLimit}`);
     }
 
     signer.sendTransaction(transaction).then((tx) => {
       tx.wait().then((receipt) => {
-        console.log("Completed swap transaction:", receipt?.transactionHash);
+        console.log('Completed swap transaction:', receipt?.transactionHash);
       });
     });
   };
@@ -126,18 +110,13 @@ async function main() {
 
     const approvalTx = await tokenFromContract
       .connect(signer)
-      .approve(
-        SWAP_ROUTER_ADDRESS,
-        ethers.utils.parseUnits(amountIn.mul(1000).toString(), 0)
-      );
+      .approve(SWAP_ROUTER_ADDRESS, ethers.utils.parseUnits(amountIn.mul(1000).toString(), 0));
 
     approvalTx.wait(3).then(() => {
       attemptSwapTransaction(signer, swapTransaction);
     });
   } else {
-    console.log(
-      `Sufficient ${tokenFrom.symbol} allowance, no need for approval.`
-    );
+    console.log(`Sufficient ${tokenFrom.symbol} allowance, no need for approval.`);
     attemptSwapTransaction(signer, swapTransaction);
   }
 }
