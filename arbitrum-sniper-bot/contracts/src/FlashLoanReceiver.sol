@@ -144,6 +144,26 @@ contract FlashLoanReceiver {
     require(success, 'ETH transfer failed');
   }
 
+  /// @notice Emergency recovery for stuck tokens
+  /// @param token Token to recover
+  /// @param to Recipient address
+  function emergencyWithdrawToken(address token, address to) external onlyOwner {
+    uint256 balance = IERC20(token).balanceOf(address(this));
+    if (balance > 0) {
+      IERC20(token).safeTransfer(to, balance);
+    }
+  }
+
+  /// @notice Emergency recovery for stuck ETH (alias for withdrawETH)
+  /// @param to Recipient address
+  function emergencyWithdrawETH(address payable to) external onlyOwner {
+    uint256 balance = address(this).balance;
+    if (balance > 0) {
+      (bool success,) = to.call{value: balance}('');
+      require(success, 'ETH transfer failed');
+    }
+  }
+
   /// @notice Check contract token balance
   /// @param token Token address
   /// @return Balance of token

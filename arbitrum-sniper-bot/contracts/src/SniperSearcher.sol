@@ -184,6 +184,27 @@ contract SniperSearcher {
     require(success, 'ETH transfer failed');
   }
 
+  /// @notice Emergency recovery for stuck tokens
+  /// @param token Token to recover
+  /// @param to Recipient address
+  function emergencyWithdrawToken(address token, address to) external onlyOwner {
+    uint256 balance = IERC20(token).balanceOf(address(this));
+    if (balance > 0) {
+      IERC20(token).safeTransfer(to, balance);
+      emit Withdrawn(token, to, balance);
+    }
+  }
+
+  /// @notice Emergency recovery for stuck ETH (alias for withdrawETH)
+  /// @param to Recipient address
+  function emergencyWithdrawETH(address payable to) external onlyOwner {
+    uint256 balance = address(this).balance;
+    if (balance > 0) {
+      (bool success,) = to.call{value: balance}('');
+      require(success, 'ETH transfer failed');
+    }
+  }
+
   /// @dev Extract output token from Uniswap V3 path encoding
   function _getTokenOut(bytes calldata path) internal pure returns (address) {
     require(path.length >= 20, 'Invalid path');
