@@ -5,8 +5,12 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts"
+    "start": "node dist/main.js",
+    "dev": "ts-node src/main.ts",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "cd contracts && forge test"
   },
   "dependencies": {
     "@uniswap/sdk-core": "^5.9.0",
@@ -22,6 +26,8 @@
   "devDependencies": {
     "@types/node": "^20.19.43",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
-    "@typescript-eslint/parser": "^8.65.0"
+    "@typescript-eslint/parser": "^8.65.0",
+    "eslint": "^9.20.0",
+    "prettier": "^3.5.0"
   }
 }
