@@ -6,10 +6,19 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { config as loadEnvironmentVariables } from 'dotenv';
 import { validateAndChecksumAddress } from './validation';
 import { Logger } from './logger';
+import { RateLimiter } from './rateLimiter';
 
 loadEnvironmentVariables();
 
 const logger = new Logger('TokenDetector');
+
+// Rate limiter for Bitquery API (2 requests per second to avoid hitting limits)
+const bitqueryRateLimiter = new RateLimiter({
+  maxRequests: 2,
+  windowMs: 1000,
+  retryDelayMs: 500,
+  maxRetries: 3,
+});
 
 const ERC20_ABI = [
   'function name() view returns (string)',
@@ -135,7 +144,17 @@ export const getTokens = async (): Promise<Tokens> => {
       data: data,
     };
 
-    const response = await axios.request(axiosConfig);
+    // Execute with rate limiting and retry logic
+    const response = await bitqueryRateLimiter.execute(
+      () => axios.request(axiosConfig),
+      (error) => {
+        // Retry on rate limit (429) or temporary server errors (5xx)
+        if (axios.isAxiosError(error)) {
+          return error.response?.status === 429 || (error.response?.status || 0) >= 500;
+        }
+        return false;
+      }
+    );
 
     if (!response.data.data?.EVM?.Events || response.data.data.EVM.Events.length === 0) {
       console.error('No recent pool creation events found');
