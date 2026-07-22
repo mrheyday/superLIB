@@ -1,5 +1,9 @@
-import { BigNumber, ethers, Signer } from 'ethers';
-import { signer } from './config';
+import { BigNumber, ethers, Signer, providers } from 'ethers';
+import { signer, provider } from './config';
+import { FLASH_LOAN_RECEIVER_ABI } from './abis';
+import { Logger } from './logger';
+
+const logger = new Logger('FlashLoanExecutor');
 
 interface FlashLoanParams {
   token: string;
@@ -14,13 +18,8 @@ interface FlashLoanResult {
   profit?: BigNumber;
   error?: string;
   gasUsed?: BigNumber;
+  revertReason?: string;
 }
-
-const FLASH_LOAN_RECEIVER_ABI = [
-  'function initiateFlashLoan(address token, uint256 amount, bytes calldata swapPath, uint256 minAmountOut) external',
-  'function withdraw(address token, address to, uint256 amount) external',
-  'function getBalance(address token) external view returns (uint256)',
-];
 
 // Aave V3 Lending Pool on Arbitrum: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
 // Used in FlashLoanReceiver contract deployment
@@ -50,21 +49,21 @@ export class FlashLoanExecutor {
   }
 
   /**
-   * Execute arbitrage using flash loan
+   * Execute arbitrage using flash loan with transaction polling
    * @param params Flash loan parameters
    * @returns Execution result with profit
    */
   async executeFlashLoanArbitrage(params: FlashLoanParams): Promise<FlashLoanResult> {
+    let txHash: string | undefined;
     try {
-      console.log(`\n⚡ Initiating flash loan arbitrage...`);
-      console.log(`  Token: ${params.token}`);
-      console.log(`  Borrow amount: ${ethers.utils.formatUnits(params.amount, 18)}`);
-      console.log(`  Min output: ${ethers.utils.formatUnits(params.minAmountOut, 6)}`);
-      console.log(`  Fee: 0.09% (paid on repayment)`);
+      logger.info('Initiating flash loan arbitrage');
+      logger.info(`Borrowing: ${ethers.utils.formatUnits(params.amount, 18)}`);
+      logger.info(`Min output: ${ethers.utils.formatUnits(params.minAmountOut, 18)}`);
+      logger.info('Fee: 0.09% (Aave V3)');
 
       // Estimate gas
       const gasEstimate = await this.estimateFlashLoanGas(params);
-      console.log(`  Gas estimate: ${gasEstimate.toString()}`);
+      logger.info(`Gas estimate: ${gasEstimate.toString()}`);
 
       // Initiate flash loan
       const tx = await this.receiver.initiateFlashLoan(
@@ -74,43 +73,61 @@ export class FlashLoanExecutor {
         params.minAmountOut,
         {
           gasLimit: gasEstimate.mul(115).div(100), // 15% buffer
+          maxFeePerGas: await provider.getGasPrice().then((p) => p.mul(120).div(100)), // 20% above current
         }
       );
 
-      console.log(`✋ Flash loan initiated: ${tx.hash}`);
+      txHash = tx.hash;
+      logger.info(`Flash loan initiated: ${txHash}`);
 
-      // Wait for confirmation
-      const receipt = await tx.wait(3); // Wait for 3 confirmations
+      // Poll for confirmation with timeout
+      if (!txHash) {
+        throw new Error('Flash loan transaction sent but no hash returned');
+      }
+
+      const receipt = await this.pollTransactionStatus(txHash, 40 * 1000, 15); // 40s max, 15 blocks
 
       if (!receipt) {
         return {
           success: false,
-          error: 'Flash loan failed - no receipt',
+          error: 'Flash loan timeout - no confirmation after 40s',
+          txHash,
         };
       }
 
-      console.log(`✅ Flash loan completed in block ${receipt.blockNumber}`);
-      console.log(`   Gas used: ${receipt.gasUsed.toString()}`);
+      if (receipt.status === 0) {
+        const revertReason = await this.decodeRevertReason(txHash);
+        logger.error(`Flash loan reverted: ${revertReason}`);
+        return {
+          success: false,
+          error: 'Flash loan transaction reverted',
+          revertReason,
+          txHash,
+        };
+      }
+
+      logger.info(`Flash loan completed in block ${receipt.blockNumber}, gas used: ${receipt.gasUsed}`);
 
       // Check profit
       const profit = await this.getProfitEstimate(params);
       if (profit.gt(0)) {
-        console.log(`   💰 Profit: ${ethers.utils.formatUnits(profit, 18)}`);
+        logger.info(`Estimated profit: ${ethers.utils.formatUnits(profit, 18)}`);
       }
 
       return {
         success: true,
-        txHash: tx.hash,
+        txHash,
         profit: profit,
         gasUsed: receipt.gasUsed,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`❌ Flash loan failed: ${errorMsg}`);
+      logger.error(`Flash loan failed: ${errorMsg}`);
 
       return {
         success: false,
         error: errorMsg,
+        txHash,
       };
     }
   }
@@ -120,15 +137,15 @@ export class FlashLoanExecutor {
    * @param loanBatches Array of flash loan parameter sets
    */
   async executeBatchFlashLoans(loanBatches: FlashLoanParams[]): Promise<FlashLoanResult[]> {
-    console.log(`\n⚡ Executing batch flash loans (${loanBatches.length} loans)...`);
+    logger.info(`Executing batch flash loans (${loanBatches.length} total)`);
     const results: FlashLoanResult[] = [];
 
     for (let i = 0; i < loanBatches.length; i++) {
-      console.log(`\n[${i + 1}/${loanBatches.length}]`);
+      logger.info(`[${i + 1}/${loanBatches.length}] Processing batch loan`);
       const result = await this.executeFlashLoanArbitrage(loanBatches[i]);
       results.push(result);
 
-      // Small delay between loans
+      // Small delay between loans to avoid rate limiting
       if (i < loanBatches.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
@@ -139,9 +156,8 @@ export class FlashLoanExecutor {
       .filter((r) => r.profit)
       .reduce((sum, r) => sum.add(r.profit!), BigNumber.from(0));
 
-    console.log(`\n📊 Batch Results:`);
-    console.log(`   Successful: ${successCount}/${loanBatches.length}`);
-    console.log(`   Total profit: ${ethers.utils.formatUnits(totalProfit, 18)}`);
+    logger.info(`Batch complete: ${successCount}/${loanBatches.length} successful`);
+    logger.info(`Total profit: ${ethers.utils.formatUnits(totalProfit, 18)}`);
 
     return results;
   }
@@ -153,37 +169,40 @@ export class FlashLoanExecutor {
    * @param amount Amount to withdraw (0 = all)
    */
   async withdraw(token: string, to: string, amount?: BigNumber): Promise<FlashLoanResult> {
+    let txHash: string | undefined;
     try {
-      console.log(`\n💸 Withdrawing from flash loan receiver...`);
+      logger.info('Withdrawing from flash loan receiver');
 
       const withdrawAmount = amount || (await this.getBalance(token));
-      console.log(`  Token: ${token}`);
-      console.log(`  Amount: ${ethers.utils.formatUnits(withdrawAmount, 18)}`);
+      logger.info(`Token: ${token}, Amount: ${ethers.utils.formatUnits(withdrawAmount, 18)}`);
 
       const tx = await this.receiver.withdraw(token, to, withdrawAmount);
-      console.log(`✋ Withdrawal initiated: ${tx.hash}`);
+      txHash = tx.hash;
+      logger.info(`Withdrawal initiated: ${txHash}`);
 
       const receipt = await tx.wait(3);
 
       if (!receipt) {
         return {
           success: false,
-          error: 'Withdrawal failed',
+          error: 'Withdrawal failed - no receipt',
+          txHash,
         };
       }
 
-      console.log(`✅ Withdrawn successfully`);
+      logger.info(`Withdrawal successful`);
       return {
         success: true,
-        txHash: tx.hash,
+        txHash,
         gasUsed: receipt.gasUsed,
       };
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`❌ Withdrawal failed: ${errorMsg}`);
+      logger.error(`Withdrawal failed: ${errorMsg}`);
       return {
         success: false,
         error: errorMsg,
+        txHash,
       };
     }
   }
@@ -196,7 +215,7 @@ export class FlashLoanExecutor {
       const balance = await this.receiver.getBalance(token);
       return BigNumber.from(balance);
     } catch (error) {
-      console.error('Failed to get balance:', error);
+      logger.warn(`Failed to get balance: ${error instanceof Error ? error.message : String(error)}`);
       return BigNumber.from(0);
     }
   }
@@ -236,8 +255,74 @@ export class FlashLoanExecutor {
       );
       return gasEstimate;
     } catch (error) {
-      console.warn('Gas estimation failed, using default', error);
+      logger.warn(`Gas estimation failed, using default: ${error instanceof Error ? error.message : String(error)}`);
       return BigNumber.from('500000'); // Conservative default for flash loans
+    }
+  }
+
+  /**
+   * Poll transaction status until confirmation or timeout
+   */
+  private async pollTransactionStatus(
+    txHash: string,
+    maxWaitMs: number,
+    maxBlocks: number
+  ): Promise<providers.TransactionReceipt | null> {
+    const startTime = Date.now();
+    const startBlock = await provider.getBlockNumber();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      const receipt = await provider.getTransactionReceipt(txHash);
+
+      if (receipt) {
+        return receipt;
+      }
+
+      const currentBlock = await provider.getBlockNumber();
+      if (currentBlock - startBlock >= maxBlocks) {
+        return null;
+      }
+
+      // Wait 2 seconds before polling again
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    return null;
+  }
+
+  /**
+   * Decode revert reason from failed transaction
+   */
+  private async decodeRevertReason(txHashValue: string): Promise<string> {
+    try {
+      const tx = await provider.getTransaction(txHashValue);
+      if (!tx) return 'Transaction not found';
+
+      // Create a transaction request for the call
+      const txRequest = {
+        to: tx.to,
+        from: tx.from,
+        data: tx.data,
+        value: tx.value,
+      };
+
+      try {
+        const result = await provider.call(txRequest, tx.blockNumber);
+        if (result === '0x') return 'Unknown error';
+
+        // Try to decode as Error(string)
+        try {
+          const iface = new ethers.utils.Interface(['function Error(string) public pure']);
+          const decoded = iface.decodeFunctionResult('Error', result);
+          return decoded[0] as string;
+        } catch {
+          return `Raw error data: ${result.slice(0, 200)}`;
+        }
+      } catch (callError) {
+        return callError instanceof Error ? callError.message : 'Call failed';
+      }
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Unknown error';
     }
   }
 }
