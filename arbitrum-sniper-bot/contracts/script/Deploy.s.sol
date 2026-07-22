@@ -27,7 +27,7 @@ contract Deploy is Script {
 
   // Aave V3 Lending Pool addresses
   address constant AAVE_POOL_ARBITRUM = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
-  address constant AAVE_POOL_SEPOLIA = 0xB9c5a95A8F8d7ad8e64D64Ef53e6aBaA40A5Bf18;
+  address constant AAVE_POOL_SEPOLIA = 0xB9C5a95a8f8D7ad8E64d64eF53e6aBaA40a5bF18;
 
   struct DeploymentAddresses {
     address sniperSearcher;
@@ -46,9 +46,7 @@ contract Deploy is Script {
     require(deployer != address(0), 'Invalid deployer address');
 
     console.log('');
-    console.log('╔════════════════════════════════════════════════════════════╗');
-    console.log('║          ARBITRUM SNIPER BOT - DEPLOYMENT SCRIPT           ║');
-    console.log('╚════════════════════════════════════════════════════════════╝');
+    console.log('========== ARBITRUM SNIPER BOT - DEPLOYMENT SCRIPT ==========');
     console.log('');
     console.log('Network Configuration:');
     console.log('  Chain ID:', block.chainid);
@@ -67,32 +65,30 @@ contract Deploy is Script {
     vm.startBroadcast(deployerKey);
 
     // 1. Deploy SniperSearcher
-    console.log('1️⃣  Deploying SniperSearcher...');
+    console.log('[1] Deploying SniperSearcher...');
     SniperSearcher sniperSearcher = new SniperSearcher(SWAP_ROUTER);
-    console.log('   ✅ SniperSearcher deployed to:', address(sniperSearcher));
+    console.log('    [OK] SniperSearcher deployed to:', address(sniperSearcher));
 
     // 2. Deploy DelegatedExecutor (no dependencies)
-    console.log('2️⃣  Deploying DelegatedExecutor...');
+    console.log('[2] Deploying DelegatedExecutor...');
     DelegatedExecutor delegatedExecutor = new DelegatedExecutor();
-    console.log('   ✅ DelegatedExecutor deployed to:', address(delegatedExecutor));
+    console.log('    [OK] DelegatedExecutor deployed to:', address(delegatedExecutor));
 
     // 3. Deploy FlashLoanReceiver (depends on SniperSearcher and AavePool)
-    console.log('3️⃣  Deploying FlashLoanReceiver...');
+    console.log('[3] Deploying FlashLoanReceiver...');
     FlashLoanReceiver flashLoanReceiver = new FlashLoanReceiver(
       address(sniperSearcher),
       aavePool
     );
-    console.log('   ✅ FlashLoanReceiver deployed to:', address(flashLoanReceiver));
+    console.log('    [OK] FlashLoanReceiver deployed to:', address(flashLoanReceiver));
 
     vm.stopBroadcast();
 
     // Print summary
     console.log('');
-    console.log('╔════════════════════════════════════════════════════════════╗');
-    console.log('║                   DEPLOYMENT SUMMARY                       ║');
-    console.log('╚════════════════════════════════════════════════════════════╝');
+    console.log('================== DEPLOYMENT SUMMARY ==================');
     console.log('');
-    console.log('✅ All contracts deployed successfully!');
+    console.log('[OK] All contracts deployed successfully!');
     console.log('');
     console.log('Contract Addresses:');
     console.log('  SniperSearcher:      ', address(sniperSearcher));
